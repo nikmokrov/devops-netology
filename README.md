@@ -27,3 +27,5 @@ terraform.rc
 игнорируются все файлы .terraformrc и terraform.rc во всех поддиректориях
 
 Add new line for fix branch
+
+Add another line with IDE PyCharm editor
