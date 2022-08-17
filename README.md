@@ -25,3 +25,5 @@ override.tf.json
 .terraformrc
 terraform.rc
 игнорируются все файлы .terraformrc и terraform.rc во всех поддиректориях
+
+Just another line for commit in main branch
