@@ -15,7 +15,8 @@ _config.vm.provider "virtualbox" do |vb|</br>
      vb.memory = "2048"</br>
      vb.cpus = 4</br>
 end_</br>
-  
+
+.
 
 8. Какой переменной можно задать длину журнала history, и на какой строчке manual это описывается?   
    Задается переменной HISTSIZE, строка 685</br>
