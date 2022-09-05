@@ -106,3 +106,135 @@ reptyr \<PID\> - присоединяем процесс к другому PTY</
 14. Команда _tee_ создает Т-образное разветвление, она читает данные из stdin и записывает их в stdout и в указанный файл. Конструкция _echo string | sudo tee /root/new_file_ будет работать, так как привилегии для процесса tee
 будут повышены с помощью sudo, при этом само sudo не выполняет перенаправление вывода, поэтому для конструкции _sudo echo string_ повышения привилегий не происходит.
 
+
+
+# Ответы на задание к занятию "3.3. Операционные системы, лекция 1"
+1. Какой системный вызов делает команда cd?</br>
+Я сделал таким образом:</br>
+_strace /bin/bash -c 'cd /tmp' 2>strace.log</br>
+grep '/tmp' strace.log_</br>
+И получил следующее:</br>
+_execve("/bin/bash", ["/bin/bash", "-c", "cd /tmp"], 0x7ffce782af70 /* 23 vars */) = 0</br>
+stat("/tmp", {st_mode=S_IFDIR|S_ISVTX|0777, st_size=4096, ...}) = 0</br>
+chdir("/tmp")                           = 0_</br>
+Первая строка в самом начале лога и относится к команде запуска bash, а вот ближе к концу лога мы видим 2 системных вызова:
+stat() - получает файловые атрибуты по inode и собственно интрересующий нас вызов chdir(), выполняющий смену рабочего каталога.
+Таким образом у команды cd в ядре есть соответствущий ей системный вызов chdir(), принимающий единственный аргумент - путь к требуемуму каталогу.
+
+2. Порядок действий таков.</br>
+Соберем логи strace на разные команды</br>
+_strace file /dev/tty 2>strace1.log</br>
+strace file /dev/sda 2>strace2.log</br>
+strace file /bin/bash 2>strace3.log_</br>
+Раз команда file ищет в своей базе данных, значит она должна ее предварительно открыть. Поищем системные вызовы для открытия файлов, например, open() в логах.</br>
+_grep open strace1.log</br>
+grep open strace2.log</br>
+grep open strace3.log_</br>
+И сравним. В принципе, там один и тот же набор: </br>
+_openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3</br>
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libmagic.so.1", O_RDONLY|O_CLOEXEC) = 3</br>
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libc.so.6", O_RDONLY|O_CLOEXEC) = 3</br>
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/liblzma.so.5", O_RDONLY|O_CLOEXEC) = 3</br>
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libbz2.so.1.0", O_RDONLY|O_CLOEXEC) = 3</br>
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libz.so.1", O_RDONLY|O_CLOEXEC) = 3</br>
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libpthread.so.0", O_RDONLY|O_CLOEXEC) = 3</br>
+openat(AT_FDCWD, "/usr/lib/locale/locale-archive", O_RDONLY|O_CLOEXEC) = 3</br>
+openat(AT_FDCWD, "/etc/magic.mgc", O_RDONLY) = -1 ENOENT (No such file or directory)</br>
+openat(AT_FDCWD, "/etc/magic", O_RDONLY) = 3</br>
+openat(AT_FDCWD, "/usr/share/misc/magic.mgc", O_RDONLY) = 3</br>
+openat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/gconv/gconv-modules.cache", O_RDONLY) = 3_</br>
+
+Видим файлы кеша, файлы библиотек, локаль, и некие файлы magic</br>
+_/etc/magic.mgc_ - файл не найден</br>
+_/etc/magic_ - файл пуст, но в нем есть комментарий, говорящий о том, что в этот файл можно добавить локальную для этой систмемы информацию для file. Формат записей можно узнать в man 5 magic.</br>
+_/usr/share/misc/magic.mgc_ - это ссылка на /usr/lib/file/magic.mgc - это и есть искомая стандартная база для file.</br>
+
+3. Зная PID процесса, нужно найти файловый дескриптор удаленного файла. Пример:</br>
+_lsof -p 1566_</br>
+
+COMMAND  PID    USER   FD   TYPE DEVICE SIZE/OFF    NODE NAME</br>
+ping    1566 vagrant    1w   REG  253,0   185902 1312140 /home/vagrant/ping (deleted)</br>
+
+У удаленного файла дескриптор 1 (stdout).</br>
+
+Далее можно обнулить файл одной из следующих команд:</br>
+
+_: > /proc/1566/fd/1</br>
+echo -n > /proc/1566/fd/1</br>
+truncate -s0 /proc/1566/fd/1_</br>
+
+Т.к. процесс продолжает исполняться, то можно эти команды добавить в cron для того, чтоб продолжать обнулять файл.
+
+4. Зомби-процесс - это завершившийся процесс, родитель которого по какой-то причине не выполнил процедуру обработки информации, оставшейся от дочернего процесса (код завершения) с помощью вызова wait().
+Так как процесс уже завершился, то аппаратные ресурсы (CPU, RAM, IO) он не потребляет. Однако ему все еще выделен какой-то PID, для хранения которого все таки требуется небольшое количество памяти. 
+Ну и так как общее количество PID в системе ограничено, то большое количество зомби-процессов может теоретически привести к исчерпанию PID. В этом основная опасность зомби-процессов.
+
+5. _sudo opensnoop-bpfcc -d 1</br>
+PID    COMM               FD ERR PATH</br>
+882    vminfo              4   0 /var/run/utmp</br>
+671    dbus-daemon        -1   2 /usr/local/share/dbus-1/system-services</br>
+671    dbus-daemon        21   0 /usr/share/dbus-1/system-services</br>
+671    dbus-daemon        -1   2 /lib/dbus-1/system-services</br>
+671    dbus-daemon        21   0 /var/lib/snapd/dbus-1/system-services/</br>
+679    irqbalance          6   0 /proc/interrupts</br>
+679    irqbalance          6   0 /proc/stat</br>
+679    irqbalance          6   0 /proc/irq/20/smp_affinity</br>
+679    irqbalance          6   0 /proc/irq/0/smp_affinity</br>
+679    irqbalance          6   0 /proc/irq/1/smp_affinity</br>
+679    irqbalance          6   0 /proc/irq/8/smp_affinity</br>
+679    irqbalance          6   0 /proc/irq/12/smp_affinity</br>
+679    irqbalance          6   0 /proc/irq/14/smp_affinity</br>
+679    irqbalance          6   0 /proc/irq/15/smp_affinity</br>
+882    vminfo              4   0 /var/run/utmp</br>
+671    dbus-daemon        -1   2 /usr/local/share/dbus-1/system-services</br>
+671    dbus-daemon        21   0 /usr/share/dbus-1/system-services</br>
+671    dbus-daemon        -1   2 /lib/dbus-1/system-services</br>
+671    dbus-daemon        21   0 /var/lib/snapd/dbus-1/system-services/_</br>
+
+6. С помощью strace аналогично вопросу 1 можно выяснить, что uname -a использует вызов uname(). </br>
+В man 2 uname (строка 52) говорится: "Part of the utsname information is also accessible via /proc/sys/kernel/{ostype, hostname, osrelease, version, domainname}." 
+Значит эту информацию можно найти в файлах osrelease и version в каталоге /proc/sys/kernel.
+
+7. Через ; задается простая последовательность команд для bash, в которой все команды в любом случае будут последовательно выполнены. Выполнение последующих команд не зависит от результата выполнения предыдущих.
+А && задает логическую (И) последовательность, когда следующая команда будет выполнена, только если предыдущая замершилась успешно с выходным кодом 0.
+Применение set -e приводит к тому, что последовательность команд будет прервана немедленно при первой же неуспешной команде (с ненулевым кодом завершения). Значит, результат будет тот же, 
+что и при использовании &&, следовательно нет смысла использовать &&. 
+
+8. _set -euxo pipefail_ состоит из следующих опций:</br>
+
+_-e_ - немедленно прервать работу, если команда завершилась с ненулевым кодом</br>
+_-u_ - рассматривать неинициализированные переменные как ошибку и остановить скрипт</br>
+_-x_ - выводить команды и их аргументы по мере исполнения</br>
+_-o pipefail_ - вернуть в качестве кода завершения последовательности команд код последней неуспешной команды</br>
+
+Такое сочетание параметров задает максимально безопасный режим исполнения скриптов, когда требуется, чтобы сбой в любой из команд скрипта приводил к его остановке. Также мы не теряем код завершения сбойной команды и знаем, какая именно команда сбоит, что идеально для отладки.
+
+9. У меня при выполнении _ps -e -o stat_  получилась такая статистика:
+_ps -e -o stat | grep -c D</br>
+0</br>
+ps -e -o stat | grep -c I</br>
+56</br>
+ps -e -o stat | grep -c R</br>
+1</br>
+ps -e -o stat | grep -c S</br>
+71</br>
+ps -e -o stat | grep -c T</br>
+0</br>
+ps -e -o stat | grep -c t</br>
+0</br>
+ps -e -o stat | grep -c W</br>
+0</br>
+ps -e -o stat | grep -c X</br>
+0</br>
+ps -e -o stat | grep -c Z</br>
+0_</br>
+
+Наиболее часто встречающийся статус - S - непрерываемый сон (процесс ожидает событие, чтобы завершиться).
+
+Дополнительные символы в статусе означают:</br>
+< - у процесса повышенный приоритет</br>
+N - у процесса пониженный приоритет</br>
+L - у процесса есть заблокированные страницы в памяти</br>
+s - признак основного процесса сеанса</br>
+l - многопоточный процесс (несколько тредов)</br>
+_+_ - находится в foreground process group - группа процессов, чей ID равен ID группы текущего терминала</br>
