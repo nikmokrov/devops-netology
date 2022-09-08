@@ -28,11 +28,11 @@ EXTRA_OPTS=--web.listen-address=":9200"</br>
 изменит порт, на котором слушает node_exporter, со стандарного 9100 на 9200.</br>
 
 ![Pic. 1](/pics/node1.png "pic. 1")
-![Pic. 2](/pics/node1.png "pic. 2")
+![Pic. 2](/pics/node2.png "pic. 2")
 
 Служба корректно останавливается и запускается:</br>
-![Pic. 3](/pics/node1.png "pic. 3")
-![Pic. 4](/pics/node1.png "pic. 4")
+![Pic. 3](/pics/node3.png "pic. 3")
+![Pic. 4](/pics/node4.png "pic. 4")
 
 2. 
 ![Pic. 5](/pics/node_exporter.png "pic. 5") </br>
