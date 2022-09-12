@@ -1,101 +1,187 @@
-# Ответы на задание к занятию "3.4. Операционные системы, лекция 2"
-1. 
-Скачал готовый бинарник _wget https://github.com/prometheus/node_exporter/releases/download/v1.4.0-rc.0/node_exporter-1.4.0-rc.0.linux-amd64.tar.gz_ и распаковал его в _/usr/local/bin_
+# Ответы на задание к занятию "3.5. Файловые системы"
+1. sparse (разреженный) файл - это файл, последовательности нулевых байт (0х00) которого не хранятся физически на диске. Вместо этого в метаданных файловой системы хранится информация об этих последовательностях (список дыр).
+Благодаря этой технологии логический размер sparse-файла может быть намного больше физически занятого пространства на жестком диске. Технология sparse-файлов поддерживается большинством современных файловых систем (NTFS, ext2/3/4, XFS, JFS, APFS, ZFS). Основное преимущество sparse-файлов - экономия дискового пространства, недостатоки - фрагментация файла при записи в дыры и накладные расходы на работу по списком дыр. Также при исчерпании свободного места на диске запись в дыры будет невозможна.
+2. Нет, не могут, т.к. права доступа и владелец - это атрибуты самого объекта (файла), а не жестких ссылок. Изменив атрибуты через одну из жестких ссылок, они изменятся и при доступе через все остальные ссылки.
 
-Создал файл /etc/systemd/system/node_exporter.service со следующим содержимым:</br>
-[Unit]</br>
-Description=Node Exporter</br>
-Wants=network-online.target</br>
-After=network-online.target</br>
-</br>
-[Service]</br>
-User=node_exporter</br>
-Group=node_exporter</br>
-Type=simple</br>
-EnvironmentFile=-/etc/default/node_exporter</br>
-ExecStart=/usr/local/bin/node_exporter $EXTRA_OPTS</br>
-</br>
-[Install]</br>
-WantedBy=multi-user.target</br>
-</br>
+.
 
-_systemctl daemon-reload_ применит новый unit-файл в systemd. 
-Служба запустится автоматически после _network-online.target_. Нужно только включить ее командой _systemctl enable node_exporter_.
+4.
+```console
+root@vagrant:~# fdisk /dev/sdb
+n
+p
+1
+2048
++2G
+n
+p
+2
+4196352
+5242879
+w
+root@vagrant:~# fdisk -l /dev/sdb
 
-Опции сервису можно задавать через файл _/etc/default/node_exporter_.</br>
-Например, строка в файле</br>
-EXTRA_OPTS=--web.listen-address=":9200"</br>
-изменит порт, на котором слушает node_exporter, со стандарного 9100 на 9200.</br>
+Disk /dev/sdb: 2.51 GiB, 2684354560 bytes, 5242880 sectors
+Disk model: VBOX HARDDISK   
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disklabel type: dos
+Disk identifier: 0xe30d3b0f
 
-![Pic. 1](/pics/node1.png "pic. 1")
-![Pic. 2](/pics/node2.png "pic. 2")
+Device     Boot   Start     End Sectors  Size Id Type
+/dev/sdb1          2048 4196351 4194304    2G 83 Linux
+/dev/sdb2       4196352 5242879 1046528  511M 83 Linux
+```
+5.
+```console
+root@vagrant:~# sfdisk -d /dev/sdb | sfdisk -f /dev/sdc
 
-Служба корректно останавливается и запускается:</br>
-![Pic. 3](/pics/node3.png "pic. 3")
-![Pic. 4](/pics/node4.png "pic. 4")
+Checking that no-one is using this disk right now ... OK
 
-2. 
-![Pic. 5](/pics/node_exporter.png "pic. 5") </br>
-Для мониторинга я бы выбрал следующие метрики:</br>
-**CPU**</br>
-node_load1 - средняя загрузка системы</br>
-node_load5</br>
-node_load15</br>
-**RAM**</br>
-node_memory_MemTotal_bytes - объем памяти</br>
-node_memory_MemFree_bytes - свободная память</br>
-node_memory_SwapTotal_bytes - объем свопа</br>
-node_memory_SwapFree_bytes - свободный своп</br>
-node_memory_Buffers_bytes - буферы</br>
-node_memory_Cached_bytes - кэш</br>
-**Disk**</br>
-node_filesystem_size_bytes - размер файловой системы в байтах</br>
-node_filesystem_free_bytes - свободное место на файловой системе в байтах</br>
-node_disk_io_now - текущее количество IO операций</br>
-**Network**</br>
-node_network_receive_bytes_total - байт принято</br>
-node_network_receive_drop_total - количество дропов при получении</br>
-node_network_receive_errs_total - количество ошибок при получении</br>
-node_network_transmit_bytes_total - байт передано</br>
-node_network_transmit_errs_total - количество дропов при передаче</br>
-node_network_transmit_drop_total - количество ошибок при передаче</br>
+Disk /dev/sdc: 2.51 GiB, 2684354560 bytes, 5242880 sectors
+Disk model: VBOX HARDDISK   
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
 
+>>> Script header accepted.
+>>> Script header accepted.
+>>> Script header accepted.
+>>> Script header accepted.
+>>> Created a new DOS disklabel with disk identifier 0xe30d3b0f.
+/dev/sdc1: Created a new partition 1 of type 'Linux' and of size 2 GiB.
+/dev/sdc2: Created a new partition 2 of type 'Linux' and of size 511 MiB.
+/dev/sdc3: Done.
 
-3. 
-![Pic. 6](/pics/netdata.png "pic. 6") </br>
+New situation:
+Disklabel type: dos
+Disk identifier: 0xe30d3b0f
 
-4. Можно, если гипервизор позволяет.</br>
-dmesg виртуалки выводит следующее:</br>
-_[    0.000000] Hypervisor detected: KVM</br>
-[    0.057878] Booting paravirtualized kernel on KVM_</br>
+Device     Boot   Start     End Sectors  Size Id Type
+/dev/sdc1          2048 4196351 4194304    2G 83 Linux
+/dev/sdc2       4196352 5242879 1046528  511M 83 Linux
 
-Linux прямо сообщает, что обнаружен гипервизор KVM и загружается паравиртуализованное ядро.</br>
+The partition table has been altered.
+Calling ioctl() to re-read partition table.
+Syncing disks.
+```
+6. `root@vagrant:~# mdadm --create --verbose /dev/md0 --level=1  --raid-devices=2 /dev/sdb1 /dev/sdc1`
+7. `root@vagrant:~# mdadm --create --verbose /dev/md1 --level=0  --raid-devices=2 /dev/sdb2 /dev/sdc2`
+8. `root@vagrant:~# pvcreate /dev/md0`</br>
+`root@vagrant:~# pvcreate /dev/md1`
+9. `root@vagrant:~# vgcreate vg_test /dev/md0 /dev/md1`
+10. `root@vagrant:~# lvcreate -n lv100M -L 100M vg_test /dev/md1`
+11. `root@vagrant:~# mkfs.ext4 /dev/vg_test/lv100M` 
+12. `root@vagrant:~# mkdir /tmp/new`</br>
+`root@vagrant:~# mount /dev/vg_test/lv100M /tmp/new`
+13. `root@vagrant:~# wget https://mirror.yandex.ru/ubuntu/ls-lR.gz -O /tmp/new/test.gz`
+14. 
+```console
+root@vagrant:~# lsblk
 
-В приниципе, гипервизор может скрыть от ВМ, что она запущена под его управлением и ВМ будет думать, что она запущена на bare metal, хотя современные популярные гипервизоры (KVM, Xen, Vmware, Hyper-V) так не делают.
+NAME                      MAJ:MIN RM  SIZE RO TYPE  MOUNTPOINT
+loop0                       7:0    0 61.9M  1 loop  /snap/core20/1328
+loop1                       7:1    0 43.6M  1 loop  /snap/snapd/14978
+loop2                       7:2    0 67.2M  1 loop  /snap/lxd/21835
+loop3                       7:3    0   47M  1 loop  /snap/snapd/16292
+loop4                       7:4    0 63.2M  1 loop  /snap/core20/1623
+loop5                       7:5    0 67.8M  1 loop  /snap/lxd/22753
+sda                         8:0    0   64G  0 disk  
+├─sda1                      8:1    0    1M  0 part  
+├─sda2                      8:2    0  1.5G  0 part  /boot
+└─sda3                      8:3    0 62.5G  0 part  
+  └─ubuntu--vg-ubuntu--lv 253:0    0 31.3G  0 lvm   /
+sdb                         8:16   0  2.5G  0 disk  
+├─sdb1                      8:17   0    2G  0 part  
+│ └─md0                     9:0    0    2G  0 raid1 
+└─sdb2                      8:18   0  511M  0 part  
+  └─md1                     9:1    0 1018M  0 raid0 
+    └─vg_test-lv100M      253:1    0  100M  0 lvm   /tmp/new
+sdc                         8:32   0  2.5G  0 disk  
+├─sdc1                      8:33   0    2G  0 part  
+│ └─md0                     9:0    0    2G  0 raid1 
+└─sdc2                      8:34   0  511M  0 part  
+  └─md1                     9:1    0 1018M  0 raid0 
+    └─vg_test-lv100M      253:1    0  100M  0 lvm   /tmp/new_
+```
+15. 
+```console
+root@vagrant:~# gzip -t /tmp/new/test.gz
+root@vagrant:~# echo $?
+0
+```
+16. 
+```console
+root@vagrant:~# pvmove /dev/md1 /dev/md0
+root@vagrant:~# lsblk
 
-5. Команда </br>
-_sysctl -a | grep nr_open_</br>
-показывает</br>
-_fs.nr_open = 1048576_</br>
-_fs.nr_open_ задает максимальное количество файловых дескрипторов, доступных для процесса (https://www.kernel.org/doc/Documentation/sysctl/fs.txt).</br>
-Это "hard" лимит, его может изменить только root.</br>
-Другое ограничение - это "soft" лимит (ulimit -Sn), ограничение на количество файловых дескрипторов по-умолчанию для всех процессов, на ВМ Ubuntu 20.04 оно равно 1024. Это ограничение пользователь или процесс может изменять вплоть до "hard" лимита в пределах своей сессии.</br>
+NAME                      MAJ:MIN RM  SIZE RO TYPE  MOUNTPOINT
+loop0                       7:0    0 61.9M  1 loop  /snap/core20/1328
+loop1                       7:1    0 43.6M  1 loop  /snap/snapd/14978
+loop2                       7:2    0 67.2M  1 loop  /snap/lxd/21835
+loop3                       7:3    0   47M  1 loop  /snap/snapd/16292
+loop4                       7:4    0 63.2M  1 loop  /snap/core20/1623
+loop5                       7:5    0 67.8M  1 loop  /snap/lxd/22753
+sda                         8:0    0   64G  0 disk  
+├─sda1                      8:1    0    1M  0 part  
+├─sda2                      8:2    0  1.5G  0 part  /boot
+└─sda3                      8:3    0 62.5G  0 part  
+  └─ubuntu--vg-ubuntu--lv 253:0    0 31.3G  0 lvm   /
+sdb                         8:16   0  2.5G  0 disk 
+├─sdb1                      8:17   0    2G  0 part 
+│ └─md0                     9:0    0    2G  0 raid1
+│   └─vg_test-lv100M      253:1    0  100M  0 lvm   /tmp/new
+└─sdb2                      8:18   0  511M  0 part
+  └─md1                     9:1    0 1018M  0 raid0
+sdc                         8:32   0  2.5G  0 disk
+├─sdc1                      8:33   0    2G  0 part
+│ └─md0                     9:0    0    2G  0 raid1
+│   └─vg_test-lv100M      253:1    0  100M  0 lvm   /tmp/new
+└─sdc2                      8:34   0  511M  0 part
+  └─md1                     9:1    0 1018M  0 raid0
+```
+17. 
+```console
+root@vagrant:~# mdadm /dev/md0 --fail /dev/sdc1
+root@vagrant:~# mdadm -D /dev/md0
 
-6.  
-![Pic. 7](/pics/ns1.png "pic. 7") </br>
-![Pic. 8](/pics/ns2.png "pic. 8") </br>
+/dev/md0:
+           Version : 1.2
+     Creation Time : Mon Sep 12 11:58:56 2022
+        Raid Level : raid1
+        Array Size : 2094080 (2045.00 MiB 2144.34 MB)
+     Used Dev Size : 2094080 (2045.00 MiB 2144.34 MB)
+      Raid Devices : 2
+     Total Devices : 2
+       Persistence : Superblock is persistent
 
-7.  _:(){ :|:& };:_ - это т.н. fork-бомба для bash. Создает бесконечное количество процессов, используя вызов fork().</br>
-Работает таким образом:</br>
-_:()_ - это определение функции без аргументов с именем ":"</br>
-_{ :|:& }_ - в теле функции происходит рекурсивный вызов ее самой и перенаправление ее вывода через пайп на вход еще одного вызова ее же. & отправляет на исполнение в фоновом режиме, так что потомки не могут завершиться и начинают
-расходовать системные ресурсы.</br>
-_;:_ - завершает определение функции и запускает ее на исполнение.</br>
+       Update Time : Mon Sep 12 12:13:13 2022
+             State : clean, degraded 
+    Active Devices : 1
+   Working Devices : 1
+    Failed Devices : 1
+     Spare Devices : 0
 
-После запуска бомбы и стабилизации системы dmesg сообщает:</br>
-_[   82.867964] cgroup: fork rejected by pids controller in /user.slice/user-1000.slice/session-1.scope_</br>
+Consistency Policy : resync
+              Name : vagrant:0  (local to host vagrant)
+              UUID : bb35e717:f6d77b3b:0bd3da87:cb19932e
+            Events : 19
+    Number   Major   Minor   RaidDevice State
+       0       8       17        0      active sync   /dev/sdb1
+       -       0        0        1      removed
+       1       8       33        -      faulty   /dev/sdc1
+```
+18. 
+```console
+root@vagrant:~# dmesg
 
-Сработал механизм cgroup (control group или контрольная группа). cgroup - группа процессов в Linux, для которой механизмами ядра наложена изоляция и установлены ограничения на вычислительные ресурсы (процессорные, сетевые, ресурсы памяти, ресурсы ввода-вывода).
-cgroup ограничил количество вызовов fork() и, достигнув предела, в определенный момент бомба не смогла создать новый процесс и функция ":" рекурсивно завершилась.   
-
-По умолчанию, systemd устанавливает ограничение на количество процессов пользователя в 33% от _sysctl kernel.threads-max_. Ограничение задается в параметре _TasksMax_ в файле _/usr/lib/systemd/system/user-.slice.d/10-defaults.conf_
+[ 2518.708101] md/raid1:md0: Disk failure on sdc1, disabling device.
+               md/raid1:md0: Operation continuing on 1 devices.
+```
+19. 
+```console
+root@vagrant:~# gzip -t /tmp/new/test.gz
+root@vagrant:~# echo $?
+0
+```
