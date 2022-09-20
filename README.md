@@ -210,6 +210,31 @@ default via 10.0.2.2 dev eth0 proto dhcp src 10.0.2.15 metric 100
 10.0.2.2 dev eth0 proto dhcp scope link src 10.0.2.15 metric 100 
 172.16.31.0/24 dev dummy0 scope link 
 172.16.32.0/24 dev dummy1 scope link 
+
+vagrant@vagrant:~$ sudo nano /etc/network/interfaces
+auto lo
+iface lo inet loopback
+
+auto eth0
+allow-hotplug eth0
+iface eth0 inet dhcp
+
+auto dummy0
+allow-hotplug dummy0
+iface dummy0 inet static
+   address 10.10.200.2
+   netmask 255.255.255.0
+   gateway 10.10.200.1
+   post-up ip route add 172.16.31.0/24 dev dummy0
+
+auto dummy1
+allow-hotplug dummy1
+iface dummy0 inet static
+   address 10.10.201.2
+   netmask 255.255.255.0
+   gateway 10.10.201.1
+   post-up ip route add 172.16.32.0/24 dev dummy1
+
 ```
 3.
 ```console
