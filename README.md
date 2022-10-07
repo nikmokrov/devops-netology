@@ -184,7 +184,8 @@ bash_command = ["cd " + git_dir, "git status 2>&1"]
 fd = os.popen(' && '.join(bash_command))
 result_os = fd.read()
 exit_code = fd.close()
-if exit_code('There is no git repository')
+if exit_code is not None:
+    print('There is no git repository')
     sys.exit()
 work_dir = os.popen(bash_command[0] + ' && pwd').read().strip()
 is_change = False
