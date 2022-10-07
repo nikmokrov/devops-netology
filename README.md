@@ -261,10 +261,403 @@ KeyboardInterrupt
 
 ### Ваш скрипт:
 ```python
-???
+#!/usr/bin/env python3
+
+import os 
+import sys
+
+if len(sys.argv) <= 1:
+    print('PR message needed')
+    sys.exit()
+pr_mess = sys.argv[1].strip('"')
+pr_mess = sys.argv[1].strip("'")
+git_dir = "~/DEVOPS-22/Homeworks/02-git-01/devops-netology"
+bash_command = ["cd " + git_dir, "git checkout -b new123", "git add *", "git commit -m 'new 123'"]
+fd = os.popen(' && '.join(bash_command))
+fd.close()
+bash_command = ["cd " + git_dir, "git checkout main"]
+fd = os.popen(' && '.join(bash_command))
+fd.close()
+bash_command = ["cd " + git_dir, "git push --all"]
+fd = os.popen(' && '.join(bash_command))
+fd.close()
+curl_str = 'curl -X POST -H "Accept: application/vnd.github+json" -H "Authorization: Bearer TOKEN HERE" https://api.github.com/repos/nikmokrov/devops-netology>
+fd = os.popen(curl_str)
+print(fd.read())
+fd.close()
+
 ```
 
 ### Вывод скрипта при запуске при тестировании:
 ```
-???
+user@host:~/DEVOPS-22/Homeworks/04-script$ ./task5.py 'New123 feature!'
+Переключено на новую ветку «new123»
+Переключено на ветку «main»
+Перечисление объектов: 5, готово.
+Подсчет объектов: 100% (5/5), готово.
+При сжатии изменений используется до 16 потоков
+Сжатие объектов: 100% (3/3), готово.
+Запись объектов: 100% (3/3), 286 bytes | 286.00 KiB/s, готово.
+Total 3 (delta 2), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (2/2), completed with 2 local objects.
+To github.com:nikmokrov/devops-netology.git
+   c271962..e81814b  new123 -> new123
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100 18145  100 18064  100    81  19423     87 --:--:-- --:--:-- --:--:-- 19489
+{
+  "url": "https://api.github.com/repos/nikmokrov/devops-netology/pulls/4",
+  "id": 1080143065,
+  "node_id": "PR_kwDOH0ahyc5AYazZ",
+  "html_url": "https://github.com/nikmokrov/devops-netology/pull/4",
+  "diff_url": "https://github.com/nikmokrov/devops-netology/pull/4.diff",
+  "patch_url": "https://github.com/nikmokrov/devops-netology/pull/4.patch",
+  "issue_url": "https://api.github.com/repos/nikmokrov/devops-netology/issues/4",
+  "number": 4,
+  "state": "open",
+  "locked": false,
+  "title": "new123 feature",
+  "user": {
+    "login": "nikmokrov",
+    "id": 111041678,
+    "node_id": "U_kgDOBp5cjg",
+    "avatar_url": "https://avatars.githubusercontent.com/u/111041678?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/nikmokrov",
+    "html_url": "https://github.com/nikmokrov",
+    "followers_url": "https://api.github.com/users/nikmokrov/followers",
+    "following_url": "https://api.github.com/users/nikmokrov/following{/other_user}",
+    "gists_url": "https://api.github.com/users/nikmokrov/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/nikmokrov/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/nikmokrov/subscriptions",
+    "organizations_url": "https://api.github.com/users/nikmokrov/orgs",
+    "repos_url": "https://api.github.com/users/nikmokrov/repos",
+    "events_url": "https://api.github.com/users/nikmokrov/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/nikmokrov/received_events",
+    "type": "User",
+    "site_admin": false
+  },
+  "body": "New123 feature!",
+  "created_at": "2022-10-07T10:00:20Z",
+  "updated_at": "2022-10-07T10:00:20Z",
+  "closed_at": null,
+  "merged_at": null,
+  "merge_commit_sha": null,
+  "assignee": null,
+  "assignees": [
+
+  ],
+  "requested_reviewers": [
+
+  ],
+  "requested_teams": [
+
+  ],
+  "labels": [
+
+  ],
+  "milestone": null,
+  "draft": false,
+  "commits_url": "https://api.github.com/repos/nikmokrov/devops-netology/pulls/4/commits",
+  "review_comments_url": "https://api.github.com/repos/nikmokrov/devops-netology/pulls/4/comments",
+  "review_comment_url": "https://api.github.com/repos/nikmokrov/devops-netology/pulls/comments{/number}",
+  "comments_url": "https://api.github.com/repos/nikmokrov/devops-netology/issues/4/comments",
+  "statuses_url": "https://api.github.com/repos/nikmokrov/devops-netology/statuses/e81814b8133a8bc6c4693ae6f1924af6a03f5c29",
+  "head": {
+    "label": "nikmokrov:new123",
+    "ref": "new123",
+    "sha": "e81814b8133a8bc6c4693ae6f1924af6a03f5c29",
+    "user": {
+      "login": "nikmokrov",
+      "id": 111041678,
+      "node_id": "U_kgDOBp5cjg",
+      "avatar_url": "https://avatars.githubusercontent.com/u/111041678?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/nikmokrov",
+      "html_url": "https://github.com/nikmokrov",
+      "followers_url": "https://api.github.com/users/nikmokrov/followers",
+      "following_url": "https://api.github.com/users/nikmokrov/following{/other_user}",
+      "gists_url": "https://api.github.com/users/nikmokrov/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/nikmokrov/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/nikmokrov/subscriptions",
+      "organizations_url": "https://api.github.com/users/nikmokrov/orgs",
+      "repos_url": "https://api.github.com/users/nikmokrov/repos",
+      "events_url": "https://api.github.com/users/nikmokrov/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/nikmokrov/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "repo": {
+      "id": 524722633,
+      "node_id": "R_kgDOH0ahyQ",
+      "name": "devops-netology",
+      "full_name": "nikmokrov/devops-netology",
+      "private": false,
+      "owner": {
+        "login": "nikmokrov",
+        "id": 111041678,
+        "node_id": "U_kgDOBp5cjg",
+        "avatar_url": "https://avatars.githubusercontent.com/u/111041678?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/nikmokrov",
+        "html_url": "https://github.com/nikmokrov",
+        "followers_url": "https://api.github.com/users/nikmokrov/followers",
+        "following_url": "https://api.github.com/users/nikmokrov/following{/other_user}",
+        "gists_url": "https://api.github.com/users/nikmokrov/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/nikmokrov/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/nikmokrov/subscriptions",
+        "organizations_url": "https://api.github.com/users/nikmokrov/orgs",
+        "repos_url": "https://api.github.com/users/nikmokrov/repos",
+        "events_url": "https://api.github.com/users/nikmokrov/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/nikmokrov/received_events",
+        "type": "User",
+        "site_admin": false
+      },
+      "html_url": "https://github.com/nikmokrov/devops-netology",
+      "description": null,
+      "fork": false,
+      "url": "https://api.github.com/repos/nikmokrov/devops-netology",
+      "forks_url": "https://api.github.com/repos/nikmokrov/devops-netology/forks",
+      "keys_url": "https://api.github.com/repos/nikmokrov/devops-netology/keys{/key_id}",
+      "collaborators_url": "https://api.github.com/repos/nikmokrov/devops-netology/collaborators{/collaborator}",
+      "teams_url": "https://api.github.com/repos/nikmokrov/devops-netology/teams",
+      "hooks_url": "https://api.github.com/repos/nikmokrov/devops-netology/hooks",
+      "issue_events_url": "https://api.github.com/repos/nikmokrov/devops-netology/issues/events{/number}",
+      "events_url": "https://api.github.com/repos/nikmokrov/devops-netology/events",
+      "assignees_url": "https://api.github.com/repos/nikmokrov/devops-netology/assignees{/user}",
+      "branches_url": "https://api.github.com/repos/nikmokrov/devops-netology/branches{/branch}",
+      "tags_url": "https://api.github.com/repos/nikmokrov/devops-netology/tags",
+      "blobs_url": "https://api.github.com/repos/nikmokrov/devops-netology/git/blobs{/sha}",
+      "git_tags_url": "https://api.github.com/repos/nikmokrov/devops-netology/git/tags{/sha}",
+      "git_refs_url": "https://api.github.com/repos/nikmokrov/devops-netology/git/refs{/sha}",
+      "trees_url": "https://api.github.com/repos/nikmokrov/devops-netology/git/trees{/sha}",
+      "statuses_url": "https://api.github.com/repos/nikmokrov/devops-netology/statuses/{sha}",
+      "languages_url": "https://api.github.com/repos/nikmokrov/devops-netology/languages",
+      "stargazers_url": "https://api.github.com/repos/nikmokrov/devops-netology/stargazers",
+      "contributors_url": "https://api.github.com/repos/nikmokrov/devops-netology/contributors",
+      "subscribers_url": "https://api.github.com/repos/nikmokrov/devops-netology/subscribers",
+      "subscription_url": "https://api.github.com/repos/nikmokrov/devops-netology/subscription",
+      "commits_url": "https://api.github.com/repos/nikmokrov/devops-netology/commits{/sha}",
+      "git_commits_url": "https://api.github.com/repos/nikmokrov/devops-netology/git/commits{/sha}",
+      "comments_url": "https://api.github.com/repos/nikmokrov/devops-netology/comments{/number}",
+      "issue_comment_url": "https://api.github.com/repos/nikmokrov/devops-netology/issues/comments{/number}",
+      "contents_url": "https://api.github.com/repos/nikmokrov/devops-netology/contents/{+path}",
+      "compare_url": "https://api.github.com/repos/nikmokrov/devops-netology/compare/{base}...{head}",
+      "merges_url": "https://api.github.com/repos/nikmokrov/devops-netology/merges",
+      "archive_url": "https://api.github.com/repos/nikmokrov/devops-netology/{archive_format}{/ref}",
+      "downloads_url": "https://api.github.com/repos/nikmokrov/devops-netology/downloads",
+      "issues_url": "https://api.github.com/repos/nikmokrov/devops-netology/issues{/number}",
+      "pulls_url": "https://api.github.com/repos/nikmokrov/devops-netology/pulls{/number}",
+      "milestones_url": "https://api.github.com/repos/nikmokrov/devops-netology/milestones{/number}",
+      "notifications_url": "https://api.github.com/repos/nikmokrov/devops-netology/notifications{?since,all,participating}",
+      "labels_url": "https://api.github.com/repos/nikmokrov/devops-netology/labels{/name}",
+      "releases_url": "https://api.github.com/repos/nikmokrov/devops-netology/releases{/id}",
+      "deployments_url": "https://api.github.com/repos/nikmokrov/devops-netology/deployments",
+      "created_at": "2022-08-14T16:25:55Z",
+      "updated_at": "2022-08-21T16:57:25Z",
+      "pushed_at": "2022-10-07T10:00:19Z",
+      "git_url": "git://github.com/nikmokrov/devops-netology.git",
+      "ssh_url": "git@github.com:nikmokrov/devops-netology.git",
+      "clone_url": "https://github.com/nikmokrov/devops-netology.git",
+      "svn_url": "https://github.com/nikmokrov/devops-netology",
+      "homepage": null,
+      "size": 3352,
+      "stargazers_count": 0,
+      "watchers_count": 0,
+      "language": "Shell",
+      "has_issues": true,
+      "has_projects": true,
+      "has_downloads": true,
+      "has_wiki": true,
+      "has_pages": false,
+      "forks_count": 0,
+      "mirror_url": null,
+      "archived": false,
+      "disabled": false,
+      "open_issues_count": 1,
+      "license": null,
+      "allow_forking": true,
+      "is_template": false,
+      "web_commit_signoff_required": false,
+      "topics": [
+
+      ],
+      "visibility": "public",
+      "forks": 0,
+      "open_issues": 1,
+      "watchers": 0,
+      "default_branch": "main"
+    }
+  },
+  "base": {
+    "label": "nikmokrov:main",
+    "ref": "main",
+    "sha": "c2719625478818087b9751dbfe3d414b13b902cf",
+    "user": {
+      "login": "nikmokrov",
+      "id": 111041678,
+      "node_id": "U_kgDOBp5cjg",
+      "avatar_url": "https://avatars.githubusercontent.com/u/111041678?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/nikmokrov",
+      "html_url": "https://github.com/nikmokrov",
+      "followers_url": "https://api.github.com/users/nikmokrov/followers",
+      "following_url": "https://api.github.com/users/nikmokrov/following{/other_user}",
+      "gists_url": "https://api.github.com/users/nikmokrov/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/nikmokrov/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/nikmokrov/subscriptions",
+      "organizations_url": "https://api.github.com/users/nikmokrov/orgs",
+      "repos_url": "https://api.github.com/users/nikmokrov/repos",
+      "events_url": "https://api.github.com/users/nikmokrov/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/nikmokrov/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "repo": {
+      "id": 524722633,
+      "node_id": "R_kgDOH0ahyQ",
+      "name": "devops-netology",
+      "full_name": "nikmokrov/devops-netology",
+      "private": false,
+      "owner": {
+        "login": "nikmokrov",
+        "id": 111041678,
+        "node_id": "U_kgDOBp5cjg",
+        "avatar_url": "https://avatars.githubusercontent.com/u/111041678?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/nikmokrov",
+        "html_url": "https://github.com/nikmokrov",
+        "followers_url": "https://api.github.com/users/nikmokrov/followers",
+        "following_url": "https://api.github.com/users/nikmokrov/following{/other_user}",
+        "gists_url": "https://api.github.com/users/nikmokrov/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/nikmokrov/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/nikmokrov/subscriptions",
+        "organizations_url": "https://api.github.com/users/nikmokrov/orgs",
+        "repos_url": "https://api.github.com/users/nikmokrov/repos",
+        "events_url": "https://api.github.com/users/nikmokrov/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/nikmokrov/received_events",
+        "type": "User",
+        "site_admin": false
+      },
+      "html_url": "https://github.com/nikmokrov/devops-netology",
+      "description": null,
+      "fork": false,
+      "url": "https://api.github.com/repos/nikmokrov/devops-netology",
+      "forks_url": "https://api.github.com/repos/nikmokrov/devops-netology/forks",
+      "keys_url": "https://api.github.com/repos/nikmokrov/devops-netology/keys{/key_id}",
+      "collaborators_url": "https://api.github.com/repos/nikmokrov/devops-netology/collaborators{/collaborator}",
+      "teams_url": "https://api.github.com/repos/nikmokrov/devops-netology/teams",
+      "hooks_url": "https://api.github.com/repos/nikmokrov/devops-netology/hooks",
+      "issue_events_url": "https://api.github.com/repos/nikmokrov/devops-netology/issues/events{/number}",
+      "events_url": "https://api.github.com/repos/nikmokrov/devops-netology/events",
+      "assignees_url": "https://api.github.com/repos/nikmokrov/devops-netology/assignees{/user}",
+      "branches_url": "https://api.github.com/repos/nikmokrov/devops-netology/branches{/branch}",
+      "tags_url": "https://api.github.com/repos/nikmokrov/devops-netology/tags",
+      "blobs_url": "https://api.github.com/repos/nikmokrov/devops-netology/git/blobs{/sha}",
+      "git_tags_url": "https://api.github.com/repos/nikmokrov/devops-netology/git/tags{/sha}",
+      "git_refs_url": "https://api.github.com/repos/nikmokrov/devops-netology/git/refs{/sha}",
+      "trees_url": "https://api.github.com/repos/nikmokrov/devops-netology/git/trees{/sha}",
+      "statuses_url": "https://api.github.com/repos/nikmokrov/devops-netology/statuses/{sha}",
+      "languages_url": "https://api.github.com/repos/nikmokrov/devops-netology/languages",
+      "stargazers_url": "https://api.github.com/repos/nikmokrov/devops-netology/stargazers",
+      "contributors_url": "https://api.github.com/repos/nikmokrov/devops-netology/contributors",
+      "subscribers_url": "https://api.github.com/repos/nikmokrov/devops-netology/subscribers",
+      "subscription_url": "https://api.github.com/repos/nikmokrov/devops-netology/subscription",
+      "commits_url": "https://api.github.com/repos/nikmokrov/devops-netology/commits{/sha}",
+      "git_commits_url": "https://api.github.com/repos/nikmokrov/devops-netology/git/commits{/sha}",
+      "comments_url": "https://api.github.com/repos/nikmokrov/devops-netology/comments{/number}",
+      "issue_comment_url": "https://api.github.com/repos/nikmokrov/devops-netology/issues/comments{/number}",
+      "contents_url": "https://api.github.com/repos/nikmokrov/devops-netology/contents/{+path}",
+      "compare_url": "https://api.github.com/repos/nikmokrov/devops-netology/compare/{base}...{head}",
+      "merges_url": "https://api.github.com/repos/nikmokrov/devops-netology/merges",
+      "archive_url": "https://api.github.com/repos/nikmokrov/devops-netology/{archive_format}{/ref}",
+      "downloads_url": "https://api.github.com/repos/nikmokrov/devops-netology/downloads",
+      "issues_url": "https://api.github.com/repos/nikmokrov/devops-netology/issues{/number}",
+      "pulls_url": "https://api.github.com/repos/nikmokrov/devops-netology/pulls{/number}",
+      "milestones_url": "https://api.github.com/repos/nikmokrov/devops-netology/milestones{/number}",
+      "notifications_url": "https://api.github.com/repos/nikmokrov/devops-netology/notifications{?since,all,participating}",
+      "labels_url": "https://api.github.com/repos/nikmokrov/devops-netology/labels{/name}",
+      "releases_url": "https://api.github.com/repos/nikmokrov/devops-netology/releases{/id}",
+      "deployments_url": "https://api.github.com/repos/nikmokrov/devops-netology/deployments",
+      "created_at": "2022-08-14T16:25:55Z",
+      "updated_at": "2022-08-21T16:57:25Z",
+      "pushed_at": "2022-10-07T10:00:19Z",
+      "git_url": "git://github.com/nikmokrov/devops-netology.git",
+      "ssh_url": "git@github.com:nikmokrov/devops-netology.git",
+      "clone_url": "https://github.com/nikmokrov/devops-netology.git",
+      "svn_url": "https://github.com/nikmokrov/devops-netology",
+      "homepage": null,
+      "size": 3352,
+      "stargazers_count": 0,
+      "watchers_count": 0,
+      "language": "Shell",
+      "has_issues": true,
+      "has_projects": true,
+      "has_downloads": true,
+      "has_wiki": true,
+      "has_pages": false,
+      "forks_count": 0,
+      "mirror_url": null,
+      "archived": false,
+      "disabled": false,
+      "open_issues_count": 1,
+      "license": null,
+      "allow_forking": true,
+      "is_template": false,
+      "web_commit_signoff_required": false,
+      "topics": [
+
+      ],
+      "visibility": "public",
+      "forks": 0,
+      "open_issues": 1,
+      "watchers": 0,
+      "default_branch": "main"
+    }
+  },
+  "_links": {
+    "self": {
+      "href": "https://api.github.com/repos/nikmokrov/devops-netology/pulls/4"
+    },
+    "html": {
+      "href": "https://github.com/nikmokrov/devops-netology/pull/4"
+    },
+    "issue": {
+      "href": "https://api.github.com/repos/nikmokrov/devops-netology/issues/4"
+    },
+    "comments": {
+      "href": "https://api.github.com/repos/nikmokrov/devops-netology/issues/4/comments"
+    },
+    "review_comments": {
+      "href": "https://api.github.com/repos/nikmokrov/devops-netology/pulls/4/comments"
+    },
+    "review_comment": {
+      "href": "https://api.github.com/repos/nikmokrov/devops-netology/pulls/comments{/number}"
+    },
+    "commits": {
+      "href": "https://api.github.com/repos/nikmokrov/devops-netology/pulls/4/commits"
+    },
+    "statuses": {
+      "href": "https://api.github.com/repos/nikmokrov/devops-netology/statuses/e81814b8133a8bc6c4693ae6f1924af6a03f5c29"
+    }
+  },
+  "author_association": "OWNER",
+  "auto_merge": null,
+  "active_lock_reason": null,
+  "merged": false,
+  "mergeable": null,
+  "rebaseable": null,
+  "mergeable_state": "unknown",
+  "merged_by": null,
+  "comments": 0,
+  "review_comments": 0,
+  "maintainer_can_modify": false,
+  "commits": 1,
+  "additions": 1,
+  "deletions": 0,
+  "changed_files": 1
+}
 ```
+
+![Pic. 1](pics/pr1.png "Pic. 1")
+![Pic. 2](pics/pr2.png "Pic. 2")
