@@ -281,7 +281,10 @@ fd.close()
 bash_command = ["cd " + git_dir, "git push --all"]
 fd = os.popen(' && '.join(bash_command))
 fd.close()
-curl_str = 'curl -X POST -H "Accept: application/vnd.github+json" -H "Authorization: Bearer TOKEN HERE" https://api.github.com/repos/nikmokrov/devops-netology>
+curl_str = 'curl -X POST -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer TOKEN HERE" \
+              https://api.github.com/repos/nikmokrov/devops-netology/pulls -d ' + "'" +\
+           '{"title":"new123 feature","body":"' + pr_mess + '","head":"new123","base":"main"}' + "'"
 fd = os.popen(curl_str)
 print(fd.read())
 fd.close()
