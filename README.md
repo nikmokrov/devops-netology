@@ -185,7 +185,7 @@ fd = os.popen(' && '.join(bash_command))
 result_os = fd.read()
 exit_code = fd.close()
 if exit_code('There is no git repository')
-    exit
+    sys.exit()
 work_dir = os.popen(bash_command[0] + ' && pwd').read().strip()
 is_change = False
 for result in result_os.split('\n'):
