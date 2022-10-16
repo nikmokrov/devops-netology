@@ -145,7 +145,7 @@ with open(filename, 'r') as fp:
 
 with open(filename, 'r') as fp:
     try:
-        yaml_content = yaml.load(fp, Loader=yaml.UnsafeLoader)
+        yaml_content = yaml.load(fp, Loader=yaml.SafeLoader)
     except yaml.YAMLError as exc:
         is_yaml = False
         yaml_exc = exc
