@@ -97,7 +97,7 @@ KeyboardInterrupt
 
 ### json-файл(ы), который(е) записал ваш скрипт:
 ```json
-user@host:~/DEVOPS-22/Homeworks/04-script$ more serv_log.json 
+user@host:~/DEVOPS-22/Homeworks/04-script$ more serv_log.json
 {"drive.google.com": "108.177.14.194"}
 {"mail.google.com": "216.58.209.165"}
 {"google.com": "216.58.210.174"}
@@ -105,7 +105,7 @@ user@host:~/DEVOPS-22/Homeworks/04-script$ more serv_log.json
 
 ### yml-файл(ы), который(е) записал ваш скрипт:
 ```yaml
-user@host:~/DEVOPS-22/Homeworks/04-script$ more serv_log.yaml 
+user@host:~/DEVOPS-22/Homeworks/04-script$ more serv_log.yaml
 - drive.google.com: 108.177.14.194
 - mail.google.com: 216.58.209.165
 - google.com: 216.58.210.174
