@@ -1,3 +1,4 @@
+### Домашнее задание к занятию "3. Введение. Экосистема. Архитектура. Жизненный цикл Docker контейнера"
 ### Задача 1
 https://hub.docker.com/r/nikmokrov/nginx
 
@@ -76,3 +77,14 @@ root@0b5fbb523d2a:/# more /data/456.txt
 
 ### Задача 4
 https://hub.docker.com/r/nikmokrov/ansible
+
+
+### Домашнее задание к занятию "4. Оркестрация группой Docker контейнеров на примере Docker Compose"
+### Задача 1
+![Pic. 1](05-virt/pics/images.png "Pic. 1")
+### Задача 2
+![Pic. 2](05-virt/pics/node01.png "Pic. 2")
+### Задача 3
+![Pic. 3](05-virt/pics/grafana.png "Pic. 3")
+### Задача 4
+![Pic. 4](05-virt/pics/node02.png "Pic. 4")
