@@ -1,107 +1,207 @@
-# Домашнее задание к занятию "6.1. Типы и структура СУБД"
+# Домашнее задание к занятию "6.2. SQL"
 ## Задача 1
+[docker-compose.yaml](06-db/docker-compose.yaml)
 
-Архитектор ПО решил проконсультироваться у вас, какой тип БД 
-лучше выбрать для хранения определенных данных.
-
-Он вам предоставил следующие типы сущностей, которые нужно будет хранить в БД:
-
-- Электронные чеки в json виде
-- Склады и автомобильные дороги для логистической компании
-- Генеалогические деревья
-- Кэш идентификаторов клиентов с ограниченным временем жизни для движка аутентификации
-- Отношения клиент-покупка для интернет-магазина
-
-Выберите подходящие типы СУБД для каждой сущности и объясните свой выбор.
-
-- Электронные чеки в json виде - документо-ориентированная СУБД (напр. mongoDB), типичная
-задача хранения документов, не имеющих прямых связей друг с другом.
-- Склады и автомобильные дороги для логистической компании -
-здесь скорее всего важно быстро находить оптимальные маршруты для перемещения грузов с/на
-и между складами. Лучшим выбором тогда будет аналитическая column-oriented СУБД
-(напр. ClickHouse), предназначенная для выполнения OLAP запросов.
-- Генеалогические деревья - сетевая СУБД (напр. InterSystems Cache). Генеалогическое дерево -
-это жестко заданная структура, состоящая из объектов (родителей и потомков) и постоянных
-связей между ними, причем у одного родителя может быть несколько потомков (или вовсе не быть),
-а у потомка - несколько родителей, как минимум 2, но и больше, если нужно хранить 
-информацию, например, об усыновлении. Эту структуру как раз и реализуют сетевые СУБД.
-- Кэш идентификаторов клиентов с ограниченным временем жизни для движка аутентификации - 
-здесь выбираем key-value СУБД (Redis, Memcached). Идентификаторы представляют собой как раз
-структуру key-value, длительное хранение не требуется (можно задать TTL), 
-а вот скорость работы важна.
-- Отношения клиент-покупка для интернет-магазина - здесь в зависимости от того, что
-именно и для чего хранится: просто список клиентов и их покупок лучше хранить в
-классической реляционной СУБД (основном хранилище данных интернет-магазина), т.к. эти
-данные хранятся длительное время и не изменяются (уже совершенные покупки); для анализа
-предпочтений клиентов лучше подойдет аналитическая колоночная СУБД, как в случае с 
-логистической компанией; список просмотренных товаров - в key-value СУБД (Redis), 
-т.к. эти данные не нужно долго хранить, а предоставить нужно быстро.
-
+```console
+user@host:~$ docker-compose up -d
+```
   
 ## Задача 2
-Вы создали распределенное высоконагруженное приложение и хотите классифицировать его согласно 
-CAP-теореме. Какой классификации по CAP-теореме соответствует ваша система, если 
-(каждый пункт - это отдельная реализация вашей системы и для каждого пункта надо привести классификацию):
+```console
+user@host:~$ docker-compose exec postgres01 psql -U postgres
+psql (12.13 (Debian 12.13-1.pgdg110+1))
+Type "help" for help.
 
-- Данные записываются на все узлы с задержкой до часа (асинхронная запись)
-- При сетевых сбоях, система может разделиться на 2 раздельных кластера
-- Система может не прислать корректный ответ или сбросить соединение
+postgres=#
 
-А согласно PACELC-теореме, как бы вы классифицировали данные реализации?
+postgres=# create user "test-admin-user" with password 'admin';
+CREATE ROLE
+postgres=# create database test_db;
+CREATE DATABASE
+test_db=# create table orders(id serial primary key, product varchar(255), price int);
+CREATE TABLE
+test_db=# create table clients(id serial primary key, full_name varchar(255), country varchar(255), order_id int REFERENCES orders(id));
+CREATE TABLE
+test_db=# grant all on all tables in schema public to "test-admin-user";
+GRANT
+test_db=# create user "test-simple-user" with password 'simple';
+CREATE ROLE
+test_db=# grant select, insert, update, delete on all tables in schema public to "test-simple-user";
+GRANT
 
-- Данные записываются на все узлы с задержкой до часа (асинхронная запись) - PA по CAP, 
-страдает согласованность; PC/EL по PACELC, система стремится оставаться согласованной при
-разделении (поэтому данные все же синхронизируют, хоть и с задержкой до часа), 
-а при отсутствии разделения делает ставку на низкие задержки (latency), 
-здесь согласованность уже не так важна.
-- При сетевых сбоях, система может разделиться на 2 раздельных кластера - CA по CAP,
-страдает устойчивость к разделению; PA/EL по PACELC, здесь важнее всего доступность и низкие 
-задержки при ответе, про стремление сохранять согласованность ничего не сказано, 
-но раз система может в любой момент разделиться, то видимо она не очень важна.
-- Система может не прислать корректный ответ или сбросить соединение - PC по CAP,
-страдает доступность; PC/EC по PACELC, согласованность важнее доступности и низких задержек.
+
+test_db=# SELECT datname FROM pg_database;
+  datname  
+-----------
+ postgres
+ test_db
+ template1
+ template0
+(4 rows)
+
+test_db=# select table_name, column_name, data_type from information_schema.columns where table_name='orders';
+ table_name | column_name |     data_type     
+------------+-------------+-------------------
+ orders     | id          | integer
+ orders     | product     | character varying
+ orders     | price       | integer
+(3 rows)
+
+test_db=# select table_name, column_name, data_type from information_schema.columns where table_name='clients';
+ table_name | column_name |     data_type     
+------------+-------------+-------------------
+ clients    | id          | integer
+ clients    | full_name   | character varying
+ clients    | country     | character varying
+ clients    | order_id    | integer
+(4 rows)
+
+test_db=# select * from information_schema.role_table_grants where grantee='test-admin-user' or grantee='test-simple-user';
+ grantor  |     grantee      | table_catalog | table_schema | table_name | privilege_type | is_grantable | with_hierarchy 
+----------+------------------+---------------+--------------+------------+----------------+--------------+----------------
+ postgres | test-simple-user | test_db       | public       | orders     | INSERT         | NO           | NO
+ postgres | test-simple-user | test_db       | public       | orders     | SELECT         | NO           | YES
+ postgres | test-simple-user | test_db       | public       | orders     | UPDATE         | NO           | NO
+ postgres | test-simple-user | test_db       | public       | orders     | DELETE         | NO           | NO
+ postgres | test-admin-user  | test_db       | public       | orders     | INSERT         | NO           | NO
+ postgres | test-admin-user  | test_db       | public       | orders     | SELECT         | NO           | YES
+ postgres | test-admin-user  | test_db       | public       | orders     | UPDATE         | NO           | NO
+ postgres | test-admin-user  | test_db       | public       | orders     | DELETE         | NO           | NO
+ postgres | test-admin-user  | test_db       | public       | orders     | TRUNCATE       | NO           | NO
+ postgres | test-admin-user  | test_db       | public       | orders     | REFERENCES     | NO           | NO
+ postgres | test-admin-user  | test_db       | public       | orders     | TRIGGER        | NO           | NO
+ postgres | test-simple-user | test_db       | public       | clients    | INSERT         | NO           | NO
+ postgres | test-simple-user | test_db       | public       | clients    | SELECT         | NO           | YES
+ postgres | test-simple-user | test_db       | public       | clients    | UPDATE         | NO           | NO
+ postgres | test-simple-user | test_db       | public       | clients    | DELETE         | NO           | NO
+ postgres | test-admin-user  | test_db       | public       | clients    | INSERT         | NO           | NO
+ postgres | test-admin-user  | test_db       | public       | clients    | SELECT         | NO           | YES
+ postgres | test-admin-user  | test_db       | public       | clients    | UPDATE         | NO           | NO
+ postgres | test-admin-user  | test_db       | public       | clients    | DELETE         | NO           | NO
+ postgres | test-admin-user  | test_db       | public       | clients    | TRUNCATE       | NO           | NO
+ postgres | test-admin-user  | test_db       | public       | clients    | REFERENCES     | NO           | NO
+ postgres | test-admin-user  | test_db       | public       | clients    | TRIGGER        | NO           | NO
+(22 rows)
+```
 
 ## Задача 3
-Могут ли в одной системе сочетаться принципы BASE и ACID? Почему?</br> 
+```console
+test_db=# insert into orders (product,price) values ('Шоколад', 10);
+INSERT 0 1
+test_db=# insert into orders (product,price) values ('Принтер', 3000);     
+INSERT 0 1
+test_db=# insert into orders (product,price) values ('Книга', 500);
+INSERT 0 1
+test_db=# insert into orders (product,price) values ('Монитор', 7000);
+INSERT 0 1
+test_db=# insert into orders (product,price) values ('Гитара', 4000);
+INSERT 0 1
+test_db=# insert into clients (full_name,country) values ('Иванов Иван Иванович', 'США');
+INSERT 0 1
+test_db=# insert into clients (full_name,country) values ('Петров Петр Петрович', 'Canada');
+INSERT 0 1
+test_db=# insert into clients (full_name,country) values ('Иоганн Себастьян Бах', 'Japan');
+INSERT 0 1
+test_db=# insert into clients (full_name,country) values ('Ронни Джеймс Дио', 'Russia');
+INSERT 0 1
+test_db=# insert into clients (full_name,country) values ('Ritchie Blackmore', 'Russia');
+INSERT 0 1
+test_db=# select * from orders;
+ id | product | price 
+----+---------+-------
+  1 | Шоколад |    10
+  2 | Принтер |  3000
+  3 | Книга   |   500
+  4 | Монитор |  7000
+  5 | Гитара  |  4000
+(5 rows)
 
-ACID принципы относятся к реляционным СУБД, по главу которых поставлена высокая надежность.
-Принципы BASE появились позднее ACID и им следуют NoSQL системы, в которых сознательно 
-пожертвовали принципами ACID в угоду большей доступности и производительности.
-С этой точки зрения ACID и BASE не сочетаются, или одно, или другое, но
-не оба сразу. Я не нашел популярной системы, в которой бы заявлялось сочетание обоих 
-принципов, однако попытка создать такую систему была описана в статье 
-(https://www.usenix.org/system/files/conference/osdi14/osdi14-paper-xie.pdf). В ней описано
-создание СУБД Salt на основе модифицированной MySQL. В этой системе предпринята попытка
-улучшить производительность ACID систем путем постепенного внедрения BASE подходов и 
-приблизить их к производительности BASE систем.
-Авторы Salt мотивировались принципом Парето, в соответствии с которым количество
-транзакций, действительно сильно влияющих на общую производительность ACID СУБД,
-на самом деле невелико. В Salt вводится понятие BASE-транзакции - абстракции, управляющей
-процессом проведения критичных для производительности транзакций. BASE-транзакции
-сохраняют такие принципы ACID, как атомарность и стойкость, но благодаря механизму
-Salt Isolation можно гибко управлять изоляцией транзакций, добиваясь увеличения 
-производительности. По утверждению авторов, им удалось добиться 6-ти кратного увеличения
-производительности по сравнению с "чистой" MySQL.</br> 
-Так что, отвечая на вопрос, одно можно сказать точно - попытки сочетать ACID и BASE
-в рамках одной системы предпринимаются.
+test_db=# select * from clients;
+ id |      full_name       | country | order_id 
+----+----------------------+---------+----------
+  1 | Иванов Иван Иванович | USA     |         
+  2 | Петров Петр Петрович | Canada  |         
+  3 | Иоганн Себастьян Бах | Japan   |         
+  4 | Ронни Джеймс Дио     | Russia  |         
+  5 | Ritchie Blackmore    | Russia  |         
+(5 rows)
 
+test_db=# select count(*) from orders;
+ count 
+-------
+     5
+(1 row)
 
+test_db=# select count(*) from clients;
+ count 
+-------
+     5
+(1 row)
+
+```
 ## Задача 4
-Вам дали задачу написать системное решение, основой которого бы послужили:
-- фиксация некоторых значений с временем жизни
-- реакция на истечение таймаута
-Вы слышали о key-value хранилище, которое имеет механизм [Pub/Sub](https://habr.com/ru/post/278237/). 
-Что это за система? Какие минусы выбора данной системы?
+```console
+test_db=# update clients set order_id=(select id from orders where orders.product='Книга') where clients.full_name='Иванов Иван Иванович';
+UPDATE 1
+test_db=# update clients set order_id=(select id from orders where orders.product='Монитор') where clients.full_name='Петров Петр Петрович';
+UPDATE 1
+test_db=# update clients set order_id=(select id from orders where orders.product='Гитара') where clients.full_name='Иоганн Себастьян Бах';
+UPDATE 1
 
-Судя по описанию, речь идет о Redis - одной из самых популярных key-value СУБД
-с поддержкой pub/sub.
-У Redis, как pub/sub платформы, имеются следующие недостатки:
-- сообщения публикуются по принципу fire-and-forget, это означает, что при отсутствии
-подписчиков в канале сообщения будут удаляться без возможности восстановления
-- клиент, который подключился к каналу в качестве подписчика, переходит в read-only режим
-и не может отправлять команды
-- высокая производительность достигается лишь при небольшом количестве клиентов, а также
-зависит от размера сообщения
-- нужно выбирать между высокой пропускной способностью (throughput) и низкой задержкой 
-(latency)
-- клиент должен уметь сам переподключаться в случае обрыва соединения
+test_db=# select full_name from clients where order_id is not null;
+      full_name       
+----------------------
+ Иванов Иван Иванович
+ Петров Петр Петрович
+ Иоганн Себастьян Бах
+(3 rows)
+
+```
+## Задача 5
+```console
+test_db=# explain select full_name from clients where order_id is not null;
+                       QUERY PLAN                       
+--------------------------------------------------------
+ Seq Scan on clients  (cost=0.00..1.05 rows=3 width=33)
+   Filter: (order_id IS NOT NULL)
+(2 rows)
+```
+EXPLAIN выводит информацию, показывающую, что делает Postgres при выполнении запроса.
+В нашем случае сообщается, что используется Seq Scan — последовательное, блок за блоком, 
+чтение данных таблицы clients. cost показывает условную стоимость исполнения: 0.00 — затраты на получение первой строки;
+1.05 — затраты на получение всех строк. rows — приблизительное количество возвращаемых строк при выполнении 
+операции. width — средний размер одной строки в байтах. Filter показывает условие WHERE.
+
+
+## Задача 6
+```console
+user@host:~$ docker-compose exec postgres01 bash -c 'pg_dump -U postgres test_db > /data/backup/test_db.sql'
+user@host:~$ docker-compose exec postgres01 bash -c 'pg_dumpall -r -U postgres > /data/backup/roles.sql'
+user@host:~$ docker-compose exec postgres02 bash -c 'psql -U postgres < /data/backup/roles.sql'              
+user@host:~$ docker-compose exec postgres02 bash -c "psql -U postgres -c 'CREATE DATABASE test_db;'"
+user@host:~$ docker-compose exec postgres02 bash -c 'psql -d test_db -U postgres < /data/backup/test_db.sql'
+user@host:~$ docker-compose exec postgres02 psql -d test_db -U postgres
+psql (12.13 (Debian 12.13-1.pgdg110+1))
+Type "help" for help.
+
+test_db=# select * from clients;
+ id |      full_name       | country | order_id 
+----+----------------------+---------+----------
+  4 | Ронни Джеймс Дио     | Russia  |         
+  5 | Ritchie Blackmore    | Russia  |         
+  1 | Иванов Иван Иванович | USA     |        3
+  2 | Петров Петр Петрович | Canada  |        4
+  3 | Иоганн Себастьян Бах | Japan   |        5
+(5 rows)
+
+test_db=# select * from orders;
+ id | product | price 
+----+---------+-------
+  1 | Шоколад |    10
+  2 | Принтер |  3000
+  3 | Книга   |   500
+  4 | Монитор |  7000
+  5 | Гитара  |  4000
+(5 rows)
+
+```
