@@ -1,29 +1,15 @@
 version: '3.3'
 
 volumes:
-    pg_data01:
-    pg_data02:
-    pg_bkp:
+    my_data:
 
 services:
-  postgres01:
-    container_name: postgres01
-    image: "postgres:12"
+  mysql:
+    container_name: mysql
+    image: "mysql:8.0.31-debian"
     environment:
-      POSTGRES_USER: "postgres"
-      POSTGRES_PASSWORD: "password"
+      MYSQL_ROOT_PASSWORD: mypassword
     volumes:
-      - pg_data01:/var/lib/postgresql/data
-      - pg_bkp:/data/backup
-    restart: unless-stopped
-
-  postgres02:
-    container_name: postgres02
-    image: "postgres:12"
-    environment:
-      POSTGRES_USER: "postgres"
-      POSTGRES_PASSWORD: "password"
-    volumes:
-      - pg_data02:/var/lib/postgresql/data
-      - pg_bkp:/data/backup
+      - my_data:/var/lib/mysql
+      - ./test_dump:/data/backup
     restart: unless-stopped
