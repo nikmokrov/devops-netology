@@ -1,0 +1,15 @@
+version: '3.3'
+
+volumes:
+    my_data:
+
+services:
+  mysql:
+    container_name: mysql
+    image: "mysql:8.0.31-debian"
+    environment:
+      MYSQL_ROOT_PASSWORD: mypassword
+    volumes:
+      - my_data:/var/lib/mysql
+      - ./test_dump:/data/backup
+    restart: unless-stopped
