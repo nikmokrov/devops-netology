@@ -1,0 +1,8 @@
+cluster.name: netology_cluster
+node.name: netology_test
+path.data: /var/lib/opensearch/data
+path.logs: /var/lib/opensearch/logs
+path.repo: /var/lib/opensearch/repo
+network.host: 0.0.0.0
+discovery.type: single-node
+plugins.security.disabled: true
