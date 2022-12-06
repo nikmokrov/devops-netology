@@ -1,6 +1,6 @@
 # Домашнее задание к занятию "6.5. Elasticsearch"
 ## Задача 1
-[Dockerfile](06-db/Dockerfile)</br>
+[Dockerfile](06-db/elasticsearch/Dockerfile)</br>
 
 [DockerHub](https://hub.docker.com/r/nikmokrov/opensearch)
 
