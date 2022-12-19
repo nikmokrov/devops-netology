@@ -6,7 +6,8 @@
 
 ## Задача 2
 [main.tf](07-terraform/main.tf)</br>
-
+_Примечание:_ У Яндекса в Compute Cloud не нашел _instance_type_, поэтому просто задаю
+разное количество ядер и памяти для stage и prod.
 ```console
 user@host:~$ terraform workspace list
   default
