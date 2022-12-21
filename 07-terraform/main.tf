@@ -6,94 +6,39 @@ provider "yandex" {
 }
 
 # test node
-resource "yandex_compute_instance" "test" {
-  name        = "test-${count.index + 1}"
-  zone        = var.zone
-  hostname    = "test-${count.index + 1}.nikmokrov.cloud"
-  description = "test-${count.index + 1}"
-  platform_id = "standard-v2"
-  count       = local.test_instance_count_map[terraform.workspace]
-
-
-  allow_stopping_for_update = true
-
-  resources {
-    cores         = local.test_instance_cores_map[terraform.workspace]
-    core_fraction = 100
-    memory        = local.test_instance_memory_map[terraform.workspace]
-  }
-
-  boot_disk {
-    initialize_params {
-      image_id = var.image_id
-      name     = "root-test-${count.index + 1}"
-      type     = "network-ssd"
-      size     = "32"
-    }
-  }
-
-  network_interface {
-    subnet_id = "e2loqdquk6b6btrpu62j"
-    nat       = true
-  }
-
-  scheduling_policy {
-    preemptible = true
-  }
-
-}
-
-
-# another test node
-resource "yandex_compute_instance" "another-test" {
-  for_each    = local.workspace[terraform.workspace]
-  name        = "another-test-${each.value}"
-  zone        = var.zone
-  hostname    = "another-test-${each.value}.nikmokrov.cloud"
-  description = "another-test-${each.value}"
+module "test" {
+  source  = "github.com/glavk/terraform-yandex-compute"
   platform_id = "standard-v2"
 
-  allow_stopping_for_update = true
+  for_each = local.workspace[terraform.workspace]
 
-  lifecycle {
-    create_before_destroy = true
-  }
+  folder_id    = var.yandex_folder_id
+  zones        = [var.zone]
 
-  resources {
-    cores         = local.test_instance_cores_map[terraform.workspace]
-    core_fraction = 100
-    memory        = local.test_instance_memory_map[terraform.workspace]
-  }
+  image_family = "ubuntu-2204-lts"
 
-  boot_disk {
-    initialize_params {
-      image_id = var.image_id
-      name     = "root-another-test-${each.value}"
-      type     = "network-ssd"
-      size     = "32"
-    }
-  }
+  name     = "test-${each.key}"
+  hostname = "test-${each.key}.nikmokrov.cloud"
 
-  network_interface {
-    subnet_id = "e2loqdquk6b6btrpu62j"
-    nat       = true
-  }
+  subnet       = "default-ru-central1-b"
+  is_nat   = true
 
-  scheduling_policy {
-    preemptible = true
-  }
+  cores  = local.test_instance_cores_map[terraform.workspace]
+  core_fraction = 100
+  memory = local.test_instance_memory_map[terraform.workspace]
+  size   = "32"
+
+  preemptible = true
 
 }
 
 # output
 output "external_ip_address_test_yandex_cloud" {
-  value = [ for test in yandex_compute_instance.test: format("%s - %s", test.hostname, test.network_interface.0.nat_ip_address) ]
-}
+  value = {
+    for k, v in module.test : k => v.external_ip
+  }
 
-output "external_ip_address_another_test_yandex_cloud" {
-  value = [ for atest in yandex_compute_instance.another-test: format("%s - %s", atest.hostname, atest.network_interface.0.nat_ip_address) ]
 }
-
 # variables
 variable "yandex_cloud_id" {
   default = "b1gcn03m319mu8kiic9q"
@@ -105,10 +50,6 @@ variable "yandex_folder_id" {
 
 variable "zone" {
   default = "ru-central1-b"
-}
-
-variable "image_id" {
-  default = "fd864gbboths76r8gm5f" # ubuntu-2204-lts
 }
 
 locals {
