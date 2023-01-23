@@ -1,138 +1,373 @@
-# Домашнее задание к занятию "7.4. Средства командной работы над инфраструктурой"
-## Задача 1
+# Домашнее задание к занятию "1. Введение в Ansible"
+## Основная часть
 
-![Terraform-Cloud](07-terraform/pics/terraform-cloud.png "Terraform-Cloud")
+1.
+```console
+user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ansible-playbook -i inventory/test.yml site.yml 
 
-## Задача 2
+PLAY [Print os facts] ***********************************************************************************************************************************************************************
 
-[server.yaml](07-terraform/server.yaml)</br>
-[atlantis.yaml](07-terraform/atlantis.yaml)</br>
+TASK [Gathering Facts] **********************************************************************************************************************************************************************
+ok: [localhost]
 
-## Задача 3
-Для создания инстансов в Yandex Cloud использовал следующий модуль:
-(https://github.com/glavk/terraform-yandex-compute)
-
-[versions.tf](07-terraform/versions.tf)</br>
-[main.tf](07-terraform/main.tf)</br>
-
-
-# Домашнее задание к занятию "7.5. Основы golang"
-## Задача 3. Написание кода.
-[task1.go](07-terraform/go/task1/task1.go)</br>
-```go
-package main
-
-import "fmt"
-
-func Convert(foot float64) float64 {
-	return foot / 0.3048
+TASK [Print OS] *****************************************************************************************************************************************************************************
+ok: [localhost] => {
+    "msg": "Debian"
 }
 
-func main() {
-	fmt.Print("Введите метры: ")
-	var input float64
-	_, err := fmt.Scanf("%f", &input)
-	if err != nil {
-		panic("Это не число!")
-	}
-	output := Convert(input)
-	fmt.Print("Получите футы: ")
-	fmt.Println(output)
+TASK [Print fact] ***************************************************************************************************************************************************************************
+ok: [localhost] => {
+    "msg": 12
 }
-```
-[task2.go](07-terraform/go/task2/task2.go)</br>
-```go
-package main
 
-import "fmt"
-
-func main() {
-
-	x := []int{48, 96, 86, 68, 57, 82, 63, 70, 37, 34, 83, 27, 19, 97, 9, 17}
-	min := x[0]
-	for _, value := range x {
-		if value < min {
-			min = value
-		}
-	}
-	fmt.Println("Min:", min)
-}
-```
-[task3.go](07-terraform/go/task3/task3.go)</br>
-```go
-package main
-
-import "fmt"
-
-func main() {
-
-	for i := 1; i <= 100; i++ {
-		if i % 3 == 0 {
-			fmt.Print(" ", i)
-		}
-	}
-	fmt.Println()
-}
+PLAY RECAP **********************************************************************************************************************************************************************************
+localhost                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 ```
 
-## Задача 4. Протестировать код.
-[task1_test.go](07-terraform/go/task1/task1_test.go)</br>
-```go
-package main
+_some_fact_ имеет значение - 12
 
-import "testing"
+2.
+```console
+user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ansible-playbook -i inventory/test.yml site.yml 
 
-func TestConvert(t *testing.T) {
-	var v float64
-	v = Convert(12)
-	if v != 39.37007874015748 {
-		t.Error("Expected 39.37007874015748, got ", v)
-	}
+PLAY [Print os facts] ***********************************************************************************************************************************************************************
+
+TASK [Gathering Facts] **********************************************************************************************************************************************************************
+ok: [localhost]
+
+TASK [Print OS] *****************************************************************************************************************************************************************************
+ok: [localhost] => {
+    "msg": "Debian"
 }
+
+TASK [Print fact] ***************************************************************************************************************************************************************************
+ok: [localhost] => {
+    "msg": "all default fact"
+}
+
+PLAY RECAP **********************************************************************************************************************************************************************************
+localhost                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 ```
 
-[task2_test.go](07-terraform/go/task2/task2_test.go)</br>
-```go
-package main
+4.
+```console
+user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ansible-playbook -i inventory/prod.yml site.yml 
 
-import (
-	"fmt"
-	"os/exec"
-	"strings"
-	"testing"
-)
+PLAY [Print os facts] ***********************************************************************************************************************************************************************
 
-func TestMain(t *testing.T) {
-	var err error
-	cmd := exec.Command("./task2")
-	out, err := cmd.CombinedOutput()
-	sout := string(out)
-	if err != nil || !strings.Contains(sout, "Min: 9") {
-		fmt.Println(sout)
-		t.Errorf("%v", err)
-	}
+TASK [Gathering Facts] **********************************************************************************************************************************************************************
+[DEPRECATION WARNING]: Distribution Ubuntu 18.04 on host ubuntu should use /usr/bin/python3, but is using /usr/bin/python for backward compatibility with prior Ansible releases. A future 
+Ansible release will default to using the discovered platform python for this host. See https://docs.ansible.com/ansible/2.10/reference_appendices/interpreter_discovery.html for more 
+information. This feature will be removed in version 2.12. Deprecation warnings can be disabled by setting deprecation_warnings=False in ansible.cfg.
+ok: [ubuntu]
+ok: [centos7]
+
+TASK [Print OS] *****************************************************************************************************************************************************************************
+ok: [centos7] => {
+    "msg": "CentOS"
 }
+ok: [ubuntu] => {
+    "msg": "Ubuntu"
+}
+
+TASK [Print fact] ***************************************************************************************************************************************************************************
+ok: [centos7] => {
+    "msg": "el"
+}
+ok: [ubuntu] => {
+    "msg": "deb"
+}
+
+PLAY RECAP **********************************************************************************************************************************************************************************
+centos7                    : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+ubuntu                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+```
+_some_fact_ для **ubuntu** имеет значение - deb, для **centos7** - el
+
+5.
+```console
+user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ansible-playbook -i inventory/prod.yml site.yml 
+
+PLAY [Print os facts] ***********************************************************************************************************************************************************************
+
+TASK [Gathering Facts] **********************************************************************************************************************************************************************
+[DEPRECATION WARNING]: Distribution Ubuntu 18.04 on host ubuntu should use /usr/bin/python3, but is using /usr/bin/python for backward compatibility with prior Ansible releases. A future 
+Ansible release will default to using the discovered platform python for this host. See https://docs.ansible.com/ansible/2.10/reference_appendices/interpreter_discovery.html for more 
+information. This feature will be removed in version 2.12. Deprecation warnings can be disabled by setting deprecation_warnings=False in ansible.cfg.
+ok: [ubuntu]
+ok: [centos7]
+
+TASK [Print OS] *****************************************************************************************************************************************************************************
+ok: [centos7] => {
+    "msg": "CentOS"
+}
+ok: [ubuntu] => {
+    "msg": "Ubuntu"
+}
+
+TASK [Print fact] ***************************************************************************************************************************************************************************
+ok: [centos7] => {
+    "msg": "el default fact"
+}
+ok: [ubuntu] => {
+    "msg": "deb default fact"
+}
+
+PLAY RECAP **********************************************************************************************************************************************************************************
+centos7                    : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+ubuntu                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 ```
 
-[task3_test.go](07-terraform/go/task3/task3_test.go)</br>
-```go
-package main
+7.
+```console
+user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ansible-vault encrypt group_vars/deb/examp.yml group_vars/el/examp.yml 
+New Vault password: 
+Confirm New Vault password: 
+Encryption successful
+```
 
-import (
-	"fmt"
-	"os/exec"
-	"strings"
-	"testing"
-)
+8
+```console
+ user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ansible-playbook -i inventory/prod.yml site.yml --ask-vault-password
+Vault password: 
 
-func TestMain(t *testing.T) {
-	var err error
-	cmd := exec.Command("./task3")
-	out, err := cmd.CombinedOutput()
-	sout := string(out)
-	if err != nil || !strings.Contains(sout, "3 6 9 12 15 18 21 24 27 30 33 36 39 42 45 48 51 54 57 60 63 66 69 72 75 78 81 84 87 90 93 96 99") {
-		fmt.Println(sout)
-		t.Errorf("%v", err)
-	}
+PLAY [Print os facts] ***********************************************************************************************************************************************************************
+
+TASK [Gathering Facts] **********************************************************************************************************************************************************************
+[DEPRECATION WARNING]: Distribution Ubuntu 18.04 on host ubuntu should use /usr/bin/python3, but is using /usr/bin/python for backward compatibility with prior Ansible releases. A future 
+Ansible release will default to using the discovered platform python for this host. See https://docs.ansible.com/ansible/2.10/reference_appendices/interpreter_discovery.html for more 
+information. This feature will be removed in version 2.12. Deprecation warnings can be disabled by setting deprecation_warnings=False in ansible.cfg.
+ok: [ubuntu]
+ok: [centos7]
+
+TASK [Print OS] *****************************************************************************************************************************************************************************
+ok: [centos7] => {
+    "msg": "CentOS"
 }
+ok: [ubuntu] => {
+    "msg": "Ubuntu"
+}
+
+TASK [Print fact] ***************************************************************************************************************************************************************************
+ok: [centos7] => {
+    "msg": "el default fact"
+}
+ok: [ubuntu] => {
+    "msg": "deb default fact"
+}
+
+PLAY RECAP **********************************************************************************************************************************************************************************
+centos7                    : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+ubuntu                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+```
+
+9
+```console
+user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ansible-doc include_tasks
+> ANSIBLE.BUILTIN.INCLUDE_TASKS    (/usr/lib/python3/dist-packages/ansible/modules/include_tasks.py)
+
+        Includes a file with a list of tasks to be executed in the current playbook.
+...
+```
+
+11.
+```console
+user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ansible-playbook -i inventory/prod.yml site.yml --ask-vault-password
+Vault password: 
+
+PLAY [Print os facts] ***********************************************************************************************************************************************************************
+
+TASK [Gathering Facts] **********************************************************************************************************************************************************************
+ok: [localhost]
+ok: [centos7]
+[DEPRECATION WARNING]: Distribution Ubuntu 18.04 on host ubuntu should use /usr/bin/python3, but is using /usr/bin/python for backward compatibility with prior Ansible releases. A future 
+Ansible release will default to using the discovered platform python for this host. See https://docs.ansible.com/ansible/2.10/reference_appendices/interpreter_discovery.html for more 
+information. This feature will be removed in version 2.12. Deprecation warnings can be disabled by setting deprecation_warnings=False in ansible.cfg.
+ok: [ubuntu]
+
+TASK [Print OS] *****************************************************************************************************************************************************************************
+ok: [localhost] => {
+    "msg": "Debian"
+}
+ok: [centos7] => {
+    "msg": "CentOS"
+}
+ok: [ubuntu] => {
+    "msg": "Ubuntu"
+}
+
+TASK [Print fact] ***************************************************************************************************************************************************************************
+ok: [localhost] => {
+    "msg": "local default fact"
+}
+ok: [centos7] => {
+    "msg": "el default fact"
+}
+ok: [ubuntu] => {
+    "msg": "deb default fact"
+}
+
+PLAY RECAP **********************************************************************************************************************************************************************************
+centos7                    : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+localhost                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+ubuntu                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+```
+
+
+## Необязательная часть
+1.
+```console
+user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ansible-vault decrypt group_vars/deb/examp.yml group_vars/el/examp.yml 
+Vault password: 
+Decryption successful
+```
+
+2.
+```console
+user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ansible-vault encrypt_string
+New Vault password: 
+Confirm New Vault password: 
+Reading plaintext input from stdin. (ctrl-d to end input, twice if your content does not already have a newline)
+PaSSw0rd
+!vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          66636535333561383937363462346136616662393937623466383765643065646633643733653236
+          3234363530383863643135656637326162633034626239320a336566613236353636666161386238
+          33326430623466343064613762383739353766313066313934343038386638353663666330613662
+          6637333032643962640a393662396230386531663530343633623334336461306635393265623561
+          3931
+Encryption successful
+```
+
+3
+```console
+user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ansible-playbook -i inventory/test.yml site.yml --ask-vault-password
+Vault password: 
+
+PLAY [Print os facts] ***********************************************************************************************************************************************************************
+
+TASK [Gathering Facts] **********************************************************************************************************************************************************************
+ok: [localhost]
+
+TASK [Print OS] *****************************************************************************************************************************************************************************
+ok: [localhost] => {
+    "msg": "Debian"
+}
+
+TASK [Print fact] ***************************************************************************************************************************************************************************
+ok: [localhost] => {
+    "msg": "PaSSw0rd"
+}
+
+PLAY RECAP **********************************************************************************************************************************************************************************
+localhost                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+```
+
+4.
+```console
+user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ansible-playbook -i inventory/prod.yml site.yml
+[WARNING]: Found both group and host with same name: fedora
+
+PLAY [Print os facts] ***********************************************************************************************************************************************************************
+
+TASK [Gathering Facts] **********************************************************************************************************************************************************************
+ok: [localhost]
+ok: [fedora]
+[DEPRECATION WARNING]: Distribution Ubuntu 18.04 on host ubuntu should use /usr/bin/python3, but is using /usr/bin/python for backward compatibility with prior Ansible releases. A future 
+Ansible release will default to using the discovered platform python for this host. See https://docs.ansible.com/ansible/2.10/reference_appendices/interpreter_discovery.html for more 
+information. This feature will be removed in version 2.12. Deprecation warnings can be disabled by setting deprecation_warnings=False in ansible.cfg.
+ok: [ubuntu]
+ok: [centos7]
+
+TASK [Print OS] *****************************************************************************************************************************************************************************
+ok: [localhost] => {
+    "msg": "Debian"
+}
+ok: [centos7] => {
+    "msg": "CentOS"
+}
+ok: [ubuntu] => {
+    "msg": "Ubuntu"
+}
+ok: [fedora] => {
+    "msg": "Fedora"
+}
+
+TASK [Print fact] ***************************************************************************************************************************************************************************
+ok: [localhost] => {
+    "msg": "local default fact"
+}
+ok: [centos7] => {
+    "msg": "el default fact"
+}
+ok: [ubuntu] => {
+    "msg": "deb default fact"
+}
+ok: [fedora] => {
+    "msg": "fedora default fact"
+}
+
+PLAY RECAP **********************************************************************************************************************************************************************************
+centos7                    : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+fedora                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+localhost                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+ubuntu                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+```
+
+5
+```console
+user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ./site.sh 
+0d7b8c96d6355a393fe2e5b0f4e71d6eb3f7e7561facecb2f695d2cca4c294d9
+64a00cb6cb5ddf494f954c717ac526c6bed1406402e77b765f9606e6eb729793
+fc26c3b574f02fa42f577af41b6e51d6bb7b9bee8e82a86f49d5922157b8e0db
+[WARNING]: Found both group and host with same name: fedora
+
+PLAY [Print os facts] ***********************************************************************************************************************************************************************
+
+TASK [Gathering Facts] **********************************************************************************************************************************************************************
+ok: [localhost]
+ok: [fedora]
+[DEPRECATION WARNING]: Distribution Ubuntu 18.04 on host ubuntu should use /usr/bin/python3, but is using /usr/bin/python for backward compatibility with prior Ansible releases. A future 
+Ansible release will default to using the discovered platform python for this host. See https://docs.ansible.com/ansible/2.10/reference_appendices/interpreter_discovery.html for more 
+information. This feature will be removed in version 2.12. Deprecation warnings can be disabled by setting deprecation_warnings=False in ansible.cfg.
+ok: [ubuntu]
+ok: [centos7]
+
+TASK [Print OS] *****************************************************************************************************************************************************************************
+ok: [localhost] => {
+    "msg": "Debian"
+}
+ok: [centos7] => {
+    "msg": "CentOS"
+}
+ok: [ubuntu] => {
+    "msg": "Ubuntu"
+}
+ok: [fedora] => {
+    "msg": "Fedora"
+}
+
+TASK [Print fact] ***************************************************************************************************************************************************************************
+ok: [localhost] => {
+    "msg": "local default fact"
+}
+ok: [centos7] => {
+    "msg": "el default fact"
+}
+ok: [ubuntu] => {
+    "msg": "deb default fact"
+}
+ok: [fedora] => {
+    "msg": "fedora default fact"
+}
+
+PLAY RECAP **********************************************************************************************************************************************************************************
+centos7                    : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+fedora                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+localhost                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+ubuntu                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+ubuntu
+centos7
+fedora
 ```
