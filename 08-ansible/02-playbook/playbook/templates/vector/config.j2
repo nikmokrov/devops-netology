@@ -1,0 +1,15 @@
+data_dir: {{ vector_data_dir }}
+sources:
+  syslog:
+    type: file
+    include:
+      - /var/log/syslog
+    ignore_older: 86400
+sinks:
+  clickhouse:
+    inputs:
+      - syslog
+    type: clickhouse
+    database: "logs"
+    table: "syslog"
+    endpoint: "http://{{ hostvars[inventory_hostname].ansible_host }}:9100"
