@@ -12,4 +12,4 @@ sinks:
     type: clickhouse
     database: "logs"
     table: "syslog"
-    endpoint: "http://{{ hostvars[inventory_hostname].ansible_host }}:9100"
+    endpoint: "http://{{ hostvars[inventory_hostname].ansible_host }}:8123"
