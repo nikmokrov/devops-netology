@@ -1,373 +1,200 @@
-# Домашнее задание к занятию "1. Введение в Ansible"
+# Домашнее задание к занятию "2. Работа с Playbook"
 ## Основная часть
 
 1.
-```console
-user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ansible-playbook -i inventory/test.yml site.yml 
-
-PLAY [Print os facts] ***********************************************************************************************************************************************************************
-
-TASK [Gathering Facts] **********************************************************************************************************************************************************************
-ok: [localhost]
-
-TASK [Print OS] *****************************************************************************************************************************************************************************
-ok: [localhost] => {
-    "msg": "Debian"
-}
-
-TASK [Print fact] ***************************************************************************************************************************************************************************
-ok: [localhost] => {
-    "msg": 12
-}
-
-PLAY RECAP **********************************************************************************************************************************************************************************
-localhost                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-```
-
-_some_fact_ имеет значение - 12
-
-2.
-```console
-user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ansible-playbook -i inventory/test.yml site.yml 
-
-PLAY [Print os facts] ***********************************************************************************************************************************************************************
-
-TASK [Gathering Facts] **********************************************************************************************************************************************************************
-ok: [localhost]
-
-TASK [Print OS] *****************************************************************************************************************************************************************************
-ok: [localhost] => {
-    "msg": "Debian"
-}
-
-TASK [Print fact] ***************************************************************************************************************************************************************************
-ok: [localhost] => {
-    "msg": "all default fact"
-}
-
-PLAY RECAP **********************************************************************************************************************************************************************************
-localhost                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-```
-
-4.
-```console
-user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ansible-playbook -i inventory/prod.yml site.yml 
-
-PLAY [Print os facts] ***********************************************************************************************************************************************************************
-
-TASK [Gathering Facts] **********************************************************************************************************************************************************************
-[DEPRECATION WARNING]: Distribution Ubuntu 18.04 on host ubuntu should use /usr/bin/python3, but is using /usr/bin/python for backward compatibility with prior Ansible releases. A future 
-Ansible release will default to using the discovered platform python for this host. See https://docs.ansible.com/ansible/2.10/reference_appendices/interpreter_discovery.html for more 
-information. This feature will be removed in version 2.12. Deprecation warnings can be disabled by setting deprecation_warnings=False in ansible.cfg.
-ok: [ubuntu]
-ok: [centos7]
-
-TASK [Print OS] *****************************************************************************************************************************************************************************
-ok: [centos7] => {
-    "msg": "CentOS"
-}
-ok: [ubuntu] => {
-    "msg": "Ubuntu"
-}
-
-TASK [Print fact] ***************************************************************************************************************************************************************************
-ok: [centos7] => {
-    "msg": "el"
-}
-ok: [ubuntu] => {
-    "msg": "deb"
-}
-
-PLAY RECAP **********************************************************************************************************************************************************************************
-centos7                    : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-ubuntu                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-```
-_some_fact_ для **ubuntu** имеет значение - deb, для **centos7** - el
+Я создаю в Yandex Cloud 2 ноды с помощью Terraform [main.tf](./08-ansible/02-playbook/terraform/main.tf)</br>
+Terraform формирует inventory файл prod.ini, который и используется для работы с нодами.
 
 5.
 ```console
-user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ansible-playbook -i inventory/prod.yml site.yml 
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/08-ansible/02-playbook/playbook$ ansible-lint site.yml 
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/08-ansible/02-playbook/playbook$ 
+```
 
-PLAY [Print os facts] ***********************************************************************************************************************************************************************
+6.
+```console
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/08-ansible/02-playbook/playbook$ ansible-playbook -i inventory/prod.ini site.yml --check
+
+PLAY [Install Clickhouse] *******************************************************************************************************************************************************************
 
 TASK [Gathering Facts] **********************************************************************************************************************************************************************
-[DEPRECATION WARNING]: Distribution Ubuntu 18.04 on host ubuntu should use /usr/bin/python3, but is using /usr/bin/python for backward compatibility with prior Ansible releases. A future 
-Ansible release will default to using the discovered platform python for this host. See https://docs.ansible.com/ansible/2.10/reference_appendices/interpreter_discovery.html for more 
-information. This feature will be removed in version 2.12. Deprecation warnings can be disabled by setting deprecation_warnings=False in ansible.cfg.
-ok: [ubuntu]
-ok: [centos7]
+ok: [clickhouse.nikmokrov.cloud]
 
-TASK [Print OS] *****************************************************************************************************************************************************************************
-ok: [centos7] => {
-    "msg": "CentOS"
-}
-ok: [ubuntu] => {
-    "msg": "Ubuntu"
-}
+TASK [Get clickhouse distrib] ***************************************************************************************************************************************************************
+changed: [clickhouse.nikmokrov.cloud] => (item=clickhouse-client)
+changed: [clickhouse.nikmokrov.cloud] => (item=clickhouse-server)
+failed: [clickhouse.nikmokrov.cloud] (item=clickhouse-common-static) => {"ansible_loop_var": "item", "changed": false, "dest": "./clickhouse-common-static-22.3.3.44.rpm", "elapsed": 0, "item": "clickhouse-common-static", "msg": "Request failed", "response": "HTTP Error 404: Not Found", "status_code": 404, "url": "https://packages.clickhouse.com/rpm/stable/clickhouse-common-static-22.3.3.44.noarch.rpm"}                                                                                                                                                                  
 
-TASK [Print fact] ***************************************************************************************************************************************************************************
-ok: [centos7] => {
-    "msg": "el default fact"
-}
-ok: [ubuntu] => {
-    "msg": "deb default fact"
-}
+TASK [Get clickhouse distrib] ***************************************************************************************************************************************************************
+changed: [clickhouse.nikmokrov.cloud]
+
+TASK [Install clickhouse packages] **********************************************************************************************************************************************************
+fatal: [clickhouse.nikmokrov.cloud]: FAILED! => {"changed": false, "msg": "No RPM file matching 'clickhouse-common-static-22.3.3.44.rpm' found on system", "rc": 127, "results": ["No RPM file matching 'clickhouse-common-static-22.3.3.44.rpm' found on system"]}                                                                                                                       
 
 PLAY RECAP **********************************************************************************************************************************************************************************
-centos7                    : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-ubuntu                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+clickhouse.nikmokrov.cloud : ok=2    changed=1    unreachable=0    failed=1    skipped=0    rescued=1    ignored=0   
 ```
+
+В режиме _--check_ play остановился на установке пакета, т.к. пакеты не были фактически скачаны и еще отсутствуют.
 
 7.
 ```console
-user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ansible-vault encrypt group_vars/deb/examp.yml group_vars/el/examp.yml 
-New Vault password: 
-Confirm New Vault password: 
-Encryption successful
-```
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/08-ansible/02-playbook/playbook$ ansible-playbook -i inventory/prod.ini site.yml --diff
 
-8
-```console
- user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ansible-playbook -i inventory/prod.yml site.yml --ask-vault-password
-Vault password: 
-
-PLAY [Print os facts] ***********************************************************************************************************************************************************************
+PLAY [Install Clickhouse] *******************************************************************************************************************************************************************
 
 TASK [Gathering Facts] **********************************************************************************************************************************************************************
-[DEPRECATION WARNING]: Distribution Ubuntu 18.04 on host ubuntu should use /usr/bin/python3, but is using /usr/bin/python for backward compatibility with prior Ansible releases. A future 
-Ansible release will default to using the discovered platform python for this host. See https://docs.ansible.com/ansible/2.10/reference_appendices/interpreter_discovery.html for more 
-information. This feature will be removed in version 2.12. Deprecation warnings can be disabled by setting deprecation_warnings=False in ansible.cfg.
-ok: [ubuntu]
-ok: [centos7]
+ok: [clickhouse.nikmokrov.cloud]
 
-TASK [Print OS] *****************************************************************************************************************************************************************************
-ok: [centos7] => {
-    "msg": "CentOS"
-}
-ok: [ubuntu] => {
-    "msg": "Ubuntu"
-}
+TASK [Get clickhouse distrib] ***************************************************************************************************************************************************************
+changed: [clickhouse.nikmokrov.cloud] => (item=clickhouse-client)
+changed: [clickhouse.nikmokrov.cloud] => (item=clickhouse-server)
+failed: [clickhouse.nikmokrov.cloud] (item=clickhouse-common-static) => {"ansible_loop_var": "item", "changed": false, "dest": "./clickhouse-common-static-22.3.3.44.rpm", "elapsed": 0, "item": "clickhouse-common-static", "msg": "Request failed", "response": "HTTP Error 404: Not Found", "status_code": 404, "url": "https://packages.clickhouse.com/rpm/stable/clickhouse-common-static-22.3.3.44.noarch.rpm"}                                                                                                                                                                  
 
-TASK [Print fact] ***************************************************************************************************************************************************************************
-ok: [centos7] => {
-    "msg": "el default fact"
-}
-ok: [ubuntu] => {
-    "msg": "deb default fact"
-}
+TASK [Get clickhouse distrib] ***************************************************************************************************************************************************************
+changed: [clickhouse.nikmokrov.cloud]
 
-PLAY RECAP **********************************************************************************************************************************************************************************
-centos7                    : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-ubuntu                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-```
+TASK [Install clickhouse packages] **********************************************************************************************************************************************************
+changed: [clickhouse.nikmokrov.cloud]
 
-9
-```console
-user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ansible-doc include_tasks
-> ANSIBLE.BUILTIN.INCLUDE_TASKS    (/usr/lib/python3/dist-packages/ansible/modules/include_tasks.py)
+TASK [Fire up clickhouse service] ***********************************************************************************************************************************************************
+changed: [clickhouse.nikmokrov.cloud]
 
-        Includes a file with a list of tasks to be executed in the current playbook.
-...
-```
+TASK [Create database] **********************************************************************************************************************************************************************
+changed: [clickhouse.nikmokrov.cloud]
 
-11.
-```console
-user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ansible-playbook -i inventory/prod.yml site.yml --ask-vault-password
-Vault password: 
+RUNNING HANDLER [Start clickhouse service] **************************************************************************************************************************************************
+changed: [clickhouse.nikmokrov.cloud]
 
-PLAY [Print os facts] ***********************************************************************************************************************************************************************
+PLAY [Install Vector] ***********************************************************************************************************************************************************************
 
 TASK [Gathering Facts] **********************************************************************************************************************************************************************
-ok: [localhost]
-ok: [centos7]
-[DEPRECATION WARNING]: Distribution Ubuntu 18.04 on host ubuntu should use /usr/bin/python3, but is using /usr/bin/python for backward compatibility with prior Ansible releases. A future 
-Ansible release will default to using the discovered platform python for this host. See https://docs.ansible.com/ansible/2.10/reference_appendices/interpreter_discovery.html for more 
-information. This feature will be removed in version 2.12. Deprecation warnings can be disabled by setting deprecation_warnings=False in ansible.cfg.
-ok: [ubuntu]
+ok: [vector.nikmokrov.cloud]
 
-TASK [Print OS] *****************************************************************************************************************************************************************************
-ok: [localhost] => {
-    "msg": "Debian"
-}
-ok: [centos7] => {
-    "msg": "CentOS"
-}
-ok: [ubuntu] => {
-    "msg": "Ubuntu"
-}
+TASK [Get vector distrib] *******************************************************************************************************************************************************************
+changed: [vector.nikmokrov.cloud]
 
-TASK [Print fact] ***************************************************************************************************************************************************************************
-ok: [localhost] => {
-    "msg": "local default fact"
-}
-ok: [centos7] => {
-    "msg": "el default fact"
-}
-ok: [ubuntu] => {
-    "msg": "deb default fact"
-}
+TASK [Extract vector archive] ***************************************************************************************************************************************************************
+changed: [vector.nikmokrov.cloud]
+
+TASK [Copy vector files to vector_path] *****************************************************************************************************************************************************
+changed: [vector.nikmokrov.cloud]
+
+TASK [Create vector data dir] ***************************************************************************************************************************************************************
+--- before
++++ after
+@@ -1,5 +1,5 @@
+ {
+-    "mode": "0755",
++    "mode": "0777",
+     "path": "/var/lib/vector",
+-    "state": "absent"
++    "state": "directory"
+ }
+
+changed: [vector.nikmokrov.cloud]
+
+TASK [Generate vector config file] **********************************************************************************************************************************************************
+--- before
++++ after: /home/user/.ansible/tmp/ansible-local-316960owaxe_w/tmpevk614eb/config.j2
+@@ -0,0 +1,15 @@
++data_dir: /var/lib/vector
++sources:
++  syslog:
++    type: file
++    include:
++      - /var/log/syslog
++    ignore_older: 86400
++sinks:
++  clickhouse:
++    inputs:
++      - syslog
++    type: clickhouse
++    database: "logs"
++    table: "syslog"
++    endpoint: "http://84.201.136.48:8123"
+
+changed: [vector.nikmokrov.cloud]
+
+TASK [Start vector service] *****************************************************************************************************************************************************************
+changed: [vector.nikmokrov.cloud]
+
+RUNNING HANDLER [Restart vector service] ****************************************************************************************************************************************************
+changed: [vector.nikmokrov.cloud]
 
 PLAY RECAP **********************************************************************************************************************************************************************************
-centos7                    : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-localhost                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-ubuntu                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+clickhouse.nikmokrov.cloud : ok=6    changed=5    unreachable=0    failed=0    skipped=0    rescued=1    ignored=0   
+vector.nikmokrov.cloud     : ok=8    changed=7    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 ```
 
-
-## Необязательная часть
-1.
+8.
 ```console
-user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ansible-vault decrypt group_vars/deb/examp.yml group_vars/el/examp.yml 
-Vault password: 
-Decryption successful
-```
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/08-ansible/02-playbook/playbook$ ansible-playbook -i inventory/prod.ini site.yml --diff --skip-tags "Run vector"
 
-2.
-```console
-user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ansible-vault encrypt_string
-New Vault password: 
-Confirm New Vault password: 
-Reading plaintext input from stdin. (ctrl-d to end input, twice if your content does not already have a newline)
-PaSSw0rd
-!vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          66636535333561383937363462346136616662393937623466383765643065646633643733653236
-          3234363530383863643135656637326162633034626239320a336566613236353636666161386238
-          33326430623466343064613762383739353766313066313934343038386638353663666330613662
-          6637333032643962640a393662396230386531663530343633623334336461306635393265623561
-          3931
-Encryption successful
-```
-
-3
-```console
-user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ansible-playbook -i inventory/test.yml site.yml --ask-vault-password
-Vault password: 
-
-PLAY [Print os facts] ***********************************************************************************************************************************************************************
+PLAY [Install Clickhouse] *******************************************************************************************************************************************************************
 
 TASK [Gathering Facts] **********************************************************************************************************************************************************************
-ok: [localhost]
+ok: [clickhouse.nikmokrov.cloud]
 
-TASK [Print OS] *****************************************************************************************************************************************************************************
-ok: [localhost] => {
-    "msg": "Debian"
-}
+TASK [Get clickhouse distrib] ***************************************************************************************************************************************************************
+ok: [clickhouse.nikmokrov.cloud] => (item=clickhouse-client)
+ok: [clickhouse.nikmokrov.cloud] => (item=clickhouse-server)
+failed: [clickhouse.nikmokrov.cloud] (item=clickhouse-common-static) => {"ansible_loop_var": "item", "changed": false, "dest": "./clickhouse-common-static-22.3.3.44.rpm", "elapsed": 0, "gid": 1000, "group": "centos", "item": "clickhouse-common-static", "mode": "0664", "msg": "Request failed", "owner": "centos", "response": "HTTP Error 404: Not Found", "secontext": "unconfined_u:object_r:user_home_t:s0", "size": 246310036, "state": "file", "status_code": 404, "uid": 1000, "url": "https://packages.clickhouse.com/rpm/stable/clickhouse-common-static-22.3.3.44.noarch.rpm"}
 
-TASK [Print fact] ***************************************************************************************************************************************************************************
-ok: [localhost] => {
-    "msg": "PaSSw0rd"
-}
+TASK [Get clickhouse distrib] ***************************************************************************************************************************************************************
+ok: [clickhouse.nikmokrov.cloud]
 
-PLAY RECAP **********************************************************************************************************************************************************************************
-localhost                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-```
+TASK [Install clickhouse packages] **********************************************************************************************************************************************************
+ok: [clickhouse.nikmokrov.cloud]
 
-4.
-```console
-user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ansible-playbook -i inventory/prod.yml site.yml
-[WARNING]: Found both group and host with same name: fedora
+TASK [Fire up clickhouse service] ***********************************************************************************************************************************************************
+ok: [clickhouse.nikmokrov.cloud]
 
-PLAY [Print os facts] ***********************************************************************************************************************************************************************
+TASK [Create database] **********************************************************************************************************************************************************************
+ok: [clickhouse.nikmokrov.cloud]
+
+PLAY [Install Vector] ***********************************************************************************************************************************************************************
 
 TASK [Gathering Facts] **********************************************************************************************************************************************************************
-ok: [localhost]
-ok: [fedora]
-[DEPRECATION WARNING]: Distribution Ubuntu 18.04 on host ubuntu should use /usr/bin/python3, but is using /usr/bin/python for backward compatibility with prior Ansible releases. A future 
-Ansible release will default to using the discovered platform python for this host. See https://docs.ansible.com/ansible/2.10/reference_appendices/interpreter_discovery.html for more 
-information. This feature will be removed in version 2.12. Deprecation warnings can be disabled by setting deprecation_warnings=False in ansible.cfg.
-ok: [ubuntu]
-ok: [centos7]
+ok: [vector.nikmokrov.cloud]
 
-TASK [Print OS] *****************************************************************************************************************************************************************************
-ok: [localhost] => {
-    "msg": "Debian"
-}
-ok: [centos7] => {
-    "msg": "CentOS"
-}
-ok: [ubuntu] => {
-    "msg": "Ubuntu"
-}
-ok: [fedora] => {
-    "msg": "Fedora"
-}
+TASK [Get vector distrib] *******************************************************************************************************************************************************************
+ok: [vector.nikmokrov.cloud]
 
-TASK [Print fact] ***************************************************************************************************************************************************************************
-ok: [localhost] => {
-    "msg": "local default fact"
-}
-ok: [centos7] => {
-    "msg": "el default fact"
-}
-ok: [ubuntu] => {
-    "msg": "deb default fact"
-}
-ok: [fedora] => {
-    "msg": "fedora default fact"
-}
+TASK [Extract vector archive] ***************************************************************************************************************************************************************
+ok: [vector.nikmokrov.cloud]
+
+TASK [Copy vector files to vector_path] *****************************************************************************************************************************************************
+ok: [vector.nikmokrov.cloud]
+
+TASK [Create vector data dir] ***************************************************************************************************************************************************************
+ok: [vector.nikmokrov.cloud]
+
+TASK [Generate vector config file] **********************************************************************************************************************************************************
+ok: [vector.nikmokrov.cloud]
 
 PLAY RECAP **********************************************************************************************************************************************************************************
-centos7                    : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-fedora                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-localhost                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-ubuntu                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+clickhouse.nikmokrov.cloud : ok=5    changed=0    unreachable=0    failed=0    skipped=0    rescued=1    ignored=0   
+vector.nikmokrov.cloud     : ok=6    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 ```
 
-5
-```console
-user@host:~/Netology/DEVOPS-22/devops-netology/08-ansible/01-base/playbook$ ./site.sh 
-0d7b8c96d6355a393fe2e5b0f4e71d6eb3f7e7561facecb2f695d2cca4c294d9
-64a00cb6cb5ddf494f954c717ac526c6bed1406402e77b765f9606e6eb729793
-fc26c3b574f02fa42f577af41b6e51d6bb7b9bee8e82a86f49d5922157b8e0db
-[WARNING]: Found both group and host with same name: fedora
+Здесь я пропустил задачу "Start vector service", помеченную тэгом "Run vector", т.к. она не является идемпотентеной.
 
-PLAY [Print os facts] ***********************************************************************************************************************************************************************
+9.
+В playbook добавлен play "Install Vector". В нем последовательно выполняются следующие tasks:</br>
+- Скачать дистрибутив vector нужной версии - "Get vector distrib"
+- Распаковать полученный архив - "Extract vector archive"
+- Скопировать файлы из архива в путь установки vector - "Copy vector files to vector_path"
+- Создать директорию для данных - "Create vector data dir" (используется в файле конфигурации vector)
+- Сгенерировать на основе шаблона файл конфигурации - "Generate vector config file"
+- Запустить vector в фоновом режиме - "Start vector service"
 
-TASK [Gathering Facts] **********************************************************************************************************************************************************************
-ok: [localhost]
-ok: [fedora]
-[DEPRECATION WARNING]: Distribution Ubuntu 18.04 on host ubuntu should use /usr/bin/python3, but is using /usr/bin/python for backward compatibility with prior Ansible releases. A future 
-Ansible release will default to using the discovered platform python for this host. See https://docs.ansible.com/ansible/2.10/reference_appendices/interpreter_discovery.html for more 
-information. This feature will be removed in version 2.12. Deprecation warnings can be disabled by setting deprecation_warnings=False in ansible.cfg.
-ok: [ubuntu]
-ok: [centos7]
+Имеется также handler "Restart vector service", который отправляет сигнал процессу vector. Этот сигнал заставляет 
+vector перечитать свой файл конфигурации. Handler вызывается в task "Generate vector config file".</br>
+Task "Start vector service" помечен тэгом "Run vector", с помощью которого можно пропустить его 
+выполнение, т.к. этот task не является идемпотентеным.</br>
 
-TASK [Print OS] *****************************************************************************************************************************************************************************
-ok: [localhost] => {
-    "msg": "Debian"
-}
-ok: [centos7] => {
-    "msg": "CentOS"
-}
-ok: [ubuntu] => {
-    "msg": "Ubuntu"
-}
-ok: [fedora] => {
-    "msg": "Fedora"
-}
-
-TASK [Print fact] ***************************************************************************************************************************************************************************
-ok: [localhost] => {
-    "msg": "local default fact"
-}
-ok: [centos7] => {
-    "msg": "el default fact"
-}
-ok: [ubuntu] => {
-    "msg": "deb default fact"
-}
-ok: [fedora] => {
-    "msg": "fedora default fact"
-}
-
-PLAY RECAP **********************************************************************************************************************************************************************************
-centos7                    : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-fedora                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-localhost                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-ubuntu                     : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-
-ubuntu
-centos7
-fedora
-```
+В playbook используются параметры:</br>
+- vector_version - требуемая версия vector
+- vector_path - путь, куда устанавливается vector
+- vector_data_dir - рабочая директория vector
