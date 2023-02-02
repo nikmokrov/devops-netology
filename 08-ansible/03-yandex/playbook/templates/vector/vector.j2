@@ -10,4 +10,9 @@ inputs = [ "syslog" ]
 type = "clickhouse"
 database = "logs"
 table = "syslog"
-endpoint = "http://{{ hostvars[inventory_hostname].ansible_host }}:8123"
+endpoint = "http://{{ hostvars[groups['clickhouse'][0]].ansible_host }}:8123"
+auth.strategy = "basic"
+auth.user = "default"
+auth.password = "{{ hostvars[groups['clickhouse'][0]].clickhouse_default_pwd }}"
+
+
