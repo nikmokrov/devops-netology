@@ -198,3 +198,353 @@ Task "Start vector service" помечен тэгом "Run vector", с помо�
 - vector_version - требуемая версия vector
 - vector_path - путь, куда устанавливается vector
 - vector_data_dir - рабочая директория vector
+
+
+
+# Домашнее задание к занятию "3. Использование Yandex Cloud"
+## Основная часть
+
+1.
+Я создаю в Yandex Cloud 3 ноды с помощью Terraform [main.tf](./08-ansible/03-yandex/terraform/main.tf)</br>
+Terraform формирует inventory файл prod.ini, который и используется для работы с нодами.
+
+[Playbook site.yml](./08-ansible/03-yandex/playbook/site.yml)
+
+5.
+```console
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/08-ansible/02-playbook/playbook$ ansible-lint site.yml 
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/08-ansible/02-playbook/playbook$ 
+```
+
+6.
+```console
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/08-ansible/03-yandex/playbook$ ansible-playbook -i inventory/prod.ini site.yml --check
+
+PLAY [Install Clickhouse] *******************************************************************************************************************************************************************
+
+TASK [Gathering Facts] **********************************************************************************************************************************************************************
+ok: [clickhouse.nikmokrov.cloud]
+
+TASK [Install some useful packages] *********************************************************************************************************************************************************
+changed: [clickhouse.nikmokrov.cloud]
+
+TASK [Add clickhouse repo] ******************************************************************************************************************************************************************
+changed: [clickhouse.nikmokrov.cloud]
+
+TASK [Install clickhouse packages] **********************************************************************************************************************************************************
+failed: [clickhouse.nikmokrov.cloud] (item=clickhouse-client) => {"ansible_loop_var": "item", "changed": false, "item": "clickhouse-client", "msg": "No package matching 'clickhouse-client-22.12.3.5' found available, installed or updated", "rc": 126, "results": ["No package matching 'clickhouse-client-22.12.3.5' found available, installed or updated"]}                         
+failed: [clickhouse.nikmokrov.cloud] (item=clickhouse-server) => {"ansible_loop_var": "item", "changed": false, "item": "clickhouse-server", "msg": "No package matching 'clickhouse-server-22.12.3.5' found available, installed or updated", "rc": 126, "results": ["No package matching 'clickhouse-server-22.12.3.5' found available, installed or updated"]}                         
+
+PLAY RECAP **********************************************************************************************************************************************************************************
+clickhouse.nikmokrov.cloud : ok=3    changed=2    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0 
+```
+
+В режиме _--check_ play остановился на установке пакетов clickhouse, т.к. пакеты не могут быть скачаны, 
+репозиторий фактически не установлен.
+
+7.
+```console
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/08-ansible/03-yandex/playbook$ ansible-playbook -i inventory/prod.ini site.yml --diff
+
+PLAY [Install Clickhouse] *******************************************************************************************************************************************************************
+
+TASK [Gathering Facts] **********************************************************************************************************************************************************************
+ok: [clickhouse.nikmokrov.cloud]
+
+TASK [Install some useful packages] *********************************************************************************************************************************************************
+changed: [clickhouse.nikmokrov.cloud]
+
+TASK [Add clickhouse repo] ******************************************************************************************************************************************************************
+--- before: /etc/yum.repos.d/clickhouse.repo
++++ after: /etc/yum.repos.d/clickhouse.repo
+@@ -0,0 +1,4 @@
++[clickhouse]
++baseurl = https://packages.clickhouse.com/rpm/stable/
++name = Clickhouse repo
++
+
+changed: [clickhouse.nikmokrov.cloud]
+
+TASK [Install clickhouse packages] **********************************************************************************************************************************************************
+changed: [clickhouse.nikmokrov.cloud] => (item=clickhouse-client)
+changed: [clickhouse.nikmokrov.cloud] => (item=clickhouse-server)
+
+TASK [Generate clickhouse server config] ****************************************************************************************************************************************************
+--- before
++++ after: /home/user/.ansible/tmp/ansible-local-32700qrk8jt_m/tmp26emczta/server-config.j2
+@@ -0,0 +1 @@
++listen_host: 0.0.0.0
+
+changed: [clickhouse.nikmokrov.cloud]
+
+TASK [Generate clickhouse user config] ******************************************************************************************************************************************************
+--- before
++++ after: /home/user/.ansible/tmp/ansible-local-32700qrk8jt_m/tmpmosj9hgv/user-config.j2
+@@ -0,0 +1,3 @@
++users:
++  default:
++    password: "J3QQ4-H7H2V"
+
+changed: [clickhouse.nikmokrov.cloud]
+
+RUNNING HANDLER [Restart clickhouse service] ************************************************************************************************************************************************
+changed: [clickhouse.nikmokrov.cloud]
+
+TASK [Create database] **********************************************************************************************************************************************************************
+changed: [clickhouse.nikmokrov.cloud]
+
+PLAY [Install Vector] ***********************************************************************************************************************************************************************
+
+TASK [Gathering Facts] **********************************************************************************************************************************************************************
+ok: [vector.nikmokrov.cloud]
+
+TASK [Install some useful packages] *********************************************************************************************************************************************************
+changed: [vector.nikmokrov.cloud]
+
+TASK [Add vector repo] **********************************************************************************************************************************************************************
+--- before: /etc/yum.repos.d/vector.repo
++++ after: /etc/yum.repos.d/vector.repo
+@@ -0,0 +1,4 @@
++[vector]
++baseurl = https://repositories.timber.io/public/vector/rpm/any-distro/any-version/x86_64
++name = Vector repo
++
+
+changed: [vector.nikmokrov.cloud]
+
+TASK [Install vector package] ***************************************************************************************************************************************************************
+changed: [vector.nikmokrov.cloud]
+
+TASK [Delete all other possible vector config files] ****************************************************************************************************************************************
+ok: [vector.nikmokrov.cloud] => (item=vector.yaml)
+ok: [vector.nikmokrov.cloud] => (item=vector.json)
+
+TASK [Generate vector config file] **********************************************************************************************************************************************************
+--- before: /etc/vector/vector.toml
++++ after: /home/user/.ansible/tmp/ansible-local-32700qrk8jt_m/tmpmec62sqn/vector.j2
+@@ -1,44 +1,18 @@
+-#                                    __   __  __
+-#                                    \ \ / / / /
+-#                                     \ V / / /
+-#                                      \_/  \/
+-#
+-#                                    V E C T O R
+-#                                   Configuration
+-#
+-# ------------------------------------------------------------------------------
+-# Website: https://vector.dev
+-# Docs: https://vector.dev/docs
+-# Chat: https://chat.vector.dev
+-# ------------------------------------------------------------------------------
++data_dir = "/var/lib/vector"
+ 
+-# Change this to use a non-default directory for Vector data storage:
+-# data_dir = "/var/lib/vector"
++[sources.syslog]
++type = "file"
++include = [ "/var/log/syslog" ]
++ignore_older = 86400
+ 
+-# Random Syslog-formatted logs
+-[sources.dummy_logs]
+-type = "demo_logs"
+-format = "syslog"
+-interval = 1
++[sinks.clickhouse]
++inputs = [ "syslog" ]
++type = "clickhouse"
++database = "logs"
++table = "syslog"
++endpoint = "http://51.250.96.50:8123"
++auth.strategy = "basic"
++auth.user = "default"
++auth.password = "J3QQ4-H7H2V"
+ 
+-# Parse Syslog logs
+-# See the Vector Remap Language reference for more info: https://vrl.dev
+-[transforms.parse_logs]
+-type = "remap"
+-inputs = ["dummy_logs"]
+-source = '''
+-. = parse_syslog!(string!(.message))
+-'''
+ 
+-# Print parsed logs to stdout
+-[sinks.print]
+-type = "console"
+-inputs = ["parse_logs"]
+-encoding.codec = "json"
+-
+-# Vector's GraphQL API (disabled by default)
+-# Uncomment to try it out with the `vector top` command or
+-# in your browser at http://localhost:8686
+-#[api]
+-#enabled = true
+-#address = "127.0.0.1:8686"
+
+changed: [vector.nikmokrov.cloud]
+
+RUNNING HANDLER [Restart vector service] ****************************************************************************************************************************************************
+changed: [vector.nikmokrov.cloud]
+
+PLAY [Install Lighthouse] *******************************************************************************************************************************************************************
+
+TASK [Gathering Facts] **********************************************************************************************************************************************************************
+ok: [lighthouse.nikmokrov.cloud]
+
+TASK [Install some useful packages] *********************************************************************************************************************************************************
+changed: [lighthouse.nikmokrov.cloud]
+
+TASK [Add EPEL repository] ******************************************************************************************************************************************************************
+--- before: /etc/yum.repos.d/epel.repo
++++ after: /etc/yum.repos.d/epel.repo
+@@ -0,0 +1,4 @@
++[epel]
++baseurl = https://download.fedoraproject.org/pub/epel/$releasever/$basearch/
++name = EPEL YUM repo
++
+
+changed: [lighthouse.nikmokrov.cloud]
+
+TASK [Install nginx] ************************************************************************************************************************************************************************
+changed: [lighthouse.nikmokrov.cloud]
+
+TASK [Create lighthouse data dir] ***********************************************************************************************************************************************************
+--- before
++++ after
+@@ -1,6 +1,6 @@
+ {
+-    "mode": "0755",
+-    "owner": 0,
++    "mode": "0700",
++    "owner": 997,
+     "path": "/opt/lighthouse",
+-    "state": "absent"
++    "state": "directory"
+ }
+
+changed: [lighthouse.nikmokrov.cloud]
+
+TASK [Get lighthouse sources] ***************************************************************************************************************************************************************
+>> Newly checked out d701335c25cd1bb9b5155711190bad8ab852c2ce
+changed: [lighthouse.nikmokrov.cloud]
+
+TASK [Generate nginx config for lighthouse] *************************************************************************************************************************************************
+--- before: /etc/nginx/nginx.conf
++++ after: /home/user/.ansible/tmp/ansible-local-32700qrk8jt_m/tmpaguwd8s4/nginx.j2
+@@ -39,7 +39,7 @@
+         listen       80;
+         listen       [::]:80;
+         server_name  _;
+-        root         /usr/share/nginx/html;
++        root         /opt/lighthouse;
+ 
+         # Load configuration files for the default server block.
+         include /etc/nginx/default.d/*.conf;
+
+changed: [lighthouse.nikmokrov.cloud]
+
+RUNNING HANDLER [Restart nginx service] *****************************************************************************************************************************************************
+changed: [lighthouse.nikmokrov.cloud]
+
+PLAY RECAP **********************************************************************************************************************************************************************************
+clickhouse.nikmokrov.cloud : ok=8    changed=7    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+lighthouse.nikmokrov.cloud : ok=8    changed=7    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+vector.nikmokrov.cloud     : ok=7    changed=5    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0      
+```
+
+8.
+```console
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/08-ansible/03-yandex/playbook$ ansible-playbook -i inventory/prod.ini site.yml --diff
+
+PLAY [Install Clickhouse] *******************************************************************************************************************************************************************
+
+TASK [Gathering Facts] **********************************************************************************************************************************************************************
+ok: [clickhouse.nikmokrov.cloud]
+
+TASK [Install some useful packages] *********************************************************************************************************************************************************
+ok: [clickhouse.nikmokrov.cloud]
+
+TASK [Add clickhouse repo] ******************************************************************************************************************************************************************
+ok: [clickhouse.nikmokrov.cloud]
+
+TASK [Install clickhouse packages] **********************************************************************************************************************************************************
+ok: [clickhouse.nikmokrov.cloud] => (item=clickhouse-client)
+ok: [clickhouse.nikmokrov.cloud] => (item=clickhouse-server)
+
+TASK [Generate clickhouse server config] ****************************************************************************************************************************************************
+ok: [clickhouse.nikmokrov.cloud]
+
+TASK [Generate clickhouse user config] ******************************************************************************************************************************************************
+ok: [clickhouse.nikmokrov.cloud]
+
+TASK [Create database] **********************************************************************************************************************************************************************
+ok: [clickhouse.nikmokrov.cloud]
+
+PLAY [Install Vector] ***********************************************************************************************************************************************************************
+
+TASK [Gathering Facts] **********************************************************************************************************************************************************************
+ok: [vector.nikmokrov.cloud]
+
+TASK [Install some useful packages] *********************************************************************************************************************************************************
+ok: [vector.nikmokrov.cloud]
+
+TASK [Add vector repo] **********************************************************************************************************************************************************************
+ok: [vector.nikmokrov.cloud]
+
+TASK [Install vector package] ***************************************************************************************************************************************************************
+ok: [vector.nikmokrov.cloud]
+
+TASK [Delete all other possible vector config files] ****************************************************************************************************************************************
+ok: [vector.nikmokrov.cloud] => (item=vector.yaml)
+ok: [vector.nikmokrov.cloud] => (item=vector.json)
+
+TASK [Generate vector config file] **********************************************************************************************************************************************************
+ok: [vector.nikmokrov.cloud]
+
+PLAY [Install Lighthouse] *******************************************************************************************************************************************************************
+
+TASK [Gathering Facts] **********************************************************************************************************************************************************************
+ok: [lighthouse.nikmokrov.cloud]
+
+TASK [Install some useful packages] *********************************************************************************************************************************************************
+ok: [lighthouse.nikmokrov.cloud]
+
+TASK [Add EPEL repository] ******************************************************************************************************************************************************************
+ok: [lighthouse.nikmokrov.cloud]
+
+TASK [Install nginx] ************************************************************************************************************************************************************************
+ok: [lighthouse.nikmokrov.cloud]
+
+TASK [Create lighthouse data dir] ***********************************************************************************************************************************************************
+ok: [lighthouse.nikmokrov.cloud]
+
+TASK [Get lighthouse sources] ***************************************************************************************************************************************************************
+ok: [lighthouse.nikmokrov.cloud]
+
+TASK [Generate nginx config for lighthouse] *************************************************************************************************************************************************
+ok: [lighthouse.nikmokrov.cloud]
+
+PLAY RECAP **********************************************************************************************************************************************************************************
+clickhouse.nikmokrov.cloud : ok=7    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+lighthouse.nikmokrov.cloud : ok=7    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+vector.nikmokrov.cloud     : ok=6    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+```
+
+Второй запуск с --diff не показывает task со статусом changed, playbook идемпотентен.
+
+9.
+В playbook добавлен play "Install Lighthouse". В нем последовательно выполняются следующие tasks:</br>
+- Устанавливаются некоторые полезные пакеты из стандартного репозитория - "Install some useful packages"
+- Подключается EPEL репозиторий (нужен для установки nginx) - "Add EPEL repository"
+- Устанавливается nginx - "Install nginx"
+- Создается директория для статики lighthouse - "Create lighthouse data dir"
+- Клонируется git lighthouse с созданную директорию - "Get lighthouse sources"
+- Создается файл конфигурации nginx из шаблона - "Generate nginx config for lighthouse"
+
+Nginx запускается при помощи handler "Restart nginx service".</br>
+
+В playbook только 1 параметр [lighthouse_vars](./08-ansible/03-yandex/playbook/group_vars/lighthouse/vars.yml):</br>
+- _lighthouse_path_ - путь, куда устанавливается статика lighthouse
+
+В этом playbook я не использовал теги.
