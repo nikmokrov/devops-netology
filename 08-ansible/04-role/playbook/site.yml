@@ -1,0 +1,51 @@
+---
+- name: Install Clickhouse
+  hosts: clickhouse
+  roles:
+    - role: clickhouse
+      vars:
+        clickhouse_version: "22.2.2.1"
+        clickhouse_listen_host:
+          - "::"
+        clickhouse_dbs_custom:
+          - { name: logs }
+        clickhouse_users_custom:
+              - { name: "test",
+                  password_sha256_hex: "37268335dd6931045bdcdf92623ff819a64244b53d0e746d438797349d4da578",
+                  networks: { "0.0.0.0/0" },
+                  profile: "default",
+                  quota: "default",
+                  dbs: [ logs ] ,
+                  comment: "test user for logs db"}
+
+
+- name: Install Vector
+  hosts: vector
+  pre_tasks:
+    - name: Install some useful packages
+      become: true
+      ansible.builtin.yum:
+        name: "{{ useful_packages }}"
+        state: present
+  roles:
+    - role: vector
+      vars:
+        vector_version: 0.27.0
+        vector_data_dir: "/var/lib/vector"
+        clickhouse_host: "{{ hostvars[groups['clickhouse'][0]].ansible_host }}"
+        clickhouse_user: "test"
+        clickhouse_password: "testtest"
+
+
+- name: Install Lighthouse
+  hosts: lighthouse
+  pre_tasks:
+    - name: Install some useful packages
+      become: true
+      ansible.builtin.yum:
+        name: "{{ useful_packages }}"
+        state: present
+  roles:
+    - role: lighthouse
+      vars:
+        lighthouse_path: "/opt/lighthouse"
