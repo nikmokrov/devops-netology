@@ -1,0 +1,9 @@
+---
+  - name: My own module
+    hosts: localhost
+    tasks:
+      - name: Execute My own module
+        my_own_module:
+          path: test123.txt
+          content: test123
+          append: False
