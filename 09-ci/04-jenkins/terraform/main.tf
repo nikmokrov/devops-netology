@@ -123,7 +123,7 @@ locals {
   nodes = {
     jenkins-master-01 = {
       "cores" = 2
-      "memory" = 2
+      "memory" = 4
     }
     jenkins-agent-01 = {
       "cores" = 2
