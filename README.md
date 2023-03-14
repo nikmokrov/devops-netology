@@ -1,7 +1,6 @@
-# Домашнее задание к занятию 10 «Jenkins»
+# Домашнее задание к занятию 11 «Teamcity»
 ## Основная часть
 
-![Pic. 1](09-ci/04-jenkins/pics/jenkins.png "Pic. 1")
+![Pic. 1](09-ci/05-teamcity/pics/teamcity1.png "Pic. 1")
 
-[Jenkinsfile](https://github.com/nikmokrov/vector-role/blob/main/Jenkinsfile)</br>
-[ScriptedJenkinsfile](https://github.com/nikmokrov/vector-role/blob/main/ScriptedJenkinsfile)</br>
+(https://github.com/nikmokrov/example-teamcity)</br>
