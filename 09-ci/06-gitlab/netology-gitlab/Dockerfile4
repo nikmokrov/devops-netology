@@ -1,0 +1,11 @@
+FROM centos:7
+
+RUN yum -y install centos-release-scl-rh
+RUN yum -y update
+RUN yum -y install rh-python38-python rh-python38-python-pip
+COPY requirements.txt requirements.txt
+RUN /opt/rh/rh-python38/root/usr/bin/pip3 install -r requirements.txt
+RUN mkdir python_api
+COPY python-api.py python_api/python-api.py
+WORKDIR python_api
+CMD ["/opt/rh/rh-python38/root/usr/bin/python3.8", "python-api.py"]

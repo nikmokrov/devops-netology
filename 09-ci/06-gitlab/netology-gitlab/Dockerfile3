@@ -1,0 +1,17 @@
+FROM centos:7
+
+RUN yum -y install epel-release
+RUN yum -y update
+RUN yum -y groupinstall "Development Tools"
+RUN yum -y install openssl-devel bzip2-devel libffi-devel xz-devel
+ADD https://www.python.org/ftp/python/3.8.12/Python-3.8.12.tgz .
+RUN tar xvf Python-3.8.12.tgz
+WORKDIR Python-3.8.12
+RUN ./configure --enable-optimizations
+RUN make altinstall
+COPY requirements.txt requirements.txt
+RUN /usr/local/bin/pip3.8 install -r requirements.txt
+RUN mkdir python_api
+COPY python-api.py python_api/python-api.py
+WORKDIR python_api
+CMD ["python3.8", "python-api.py"]

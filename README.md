@@ -1,18 +1,10 @@
-# Домашнее задание к занятию 11 «Teamcity»
-## Основная часть
-
-![Pic. 1](09-ci/05-teamcity/pics/teamcity1.png "Pic. 1")
-
-(https://github.com/nikmokrov/example-teamcity)</br>
-</br>
-
 # Домашнее задание к занятию 12 «GitLab»
 ## Основная часть
 
 ### DevOps
 
 [gitlab-ci.yml](09-ci/06-gitlab/netology-gitlab/gitlab-ci.yml)</br>
-[Dockerfile](09-ci/06-gitlab/netology-gitlab/Dockerfile)</br>
+[Dockerfile](09-ci/06-gitlab/netology-gitlab/Dockerfile4)</br>
 [k8s.yaml](09-ci/06-gitlab/netology-gitlab/k8s.yaml)</br>
 [python-api.py](09-ci/06-gitlab/netology-gitlab/python-api.py)</br>
 
