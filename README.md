@@ -35,8 +35,39 @@
 3. Существуют варианты бесплатного построения системы сбора логов. Например, можно развернуть OpenSearch (полностью свободный аналог ELK стека), Zabbix или Prometheus/Grafana на бесплатных VDS от Google (https://cloud.google.com/free/), Oracle (https://www.oracle.com/cloud/free/), AWS (https://aws.amazon.com/ru/free/?all-free-tier.sort-by=item.additionalFields.SortRank&all-free-tier.sort-order=asc). Эти предложения действуют до 1 года, чего должно хватить до получения финансирования. Также существуют ограничения по производительности CPU, объему RAM/диска, сетевому трафику, их нужно учитывать при выборе бесплатного VDS исходя из внутренних потребностей компании.
 
 4. Забыли про коды 3хх (редиректы). Правильная формула должна выглядеть так: (summ_2xx_requests + summ_3xx_requests)/summ_all_requests
-</br>
-</br>
+
+5. Опишите основные плюсы и минусы pull и push систем мониторинга.</br>
+- Основные достоинства pull модели:</br>
+  - Централизованное конфигурирование, вся конфигурация в одном месте
+  - Проще контролировать достоверность и безопасность данных, т.к. сервер является инициатором соединения
+  - Контролируемое масштабирование системы, собираем данные только из указанных источников
+  - Более контролируемое поступление данных (on demand), а также проще отлаживать проблемы (как минимум, проще понять, на какой стороне проблема)
+  - Производительность зависит в большей степени от сервера
+ 
+- Основные достоинства push модели:</br>
+  - Упрощенное обнаружение новых объектов мониторинга, агенты сами докладывают о появившихся объектах
+  - Не нужны постоянно открытые порты, через которые передаются метрики
+  - Меньшие накладные расходы на передачу данных (благодаря использованию UDP)
+  - Производительность зависит в большей степени от агентов
+  - Более простая репликация данных, агенты могут слать данные на несколько серверов одновременно
+  - Меньше вероятность потери метрик, т.к. период опроса может быть достаточно небольшим, а также метрики можно слать пакетами
+  - Ниже расходы на обслуживание (O&M Cost)
+
+6. Какие из ниже перечисленных систем относятся к push модели, а какие к pull? А может есть гибридные?
+- Prometheus - pull, но возможен и push (https://prometheus.io/docs/instrumenting/pushing/)
+- TICK - push
+- Zabbix - гибрид, есть active и passive checks (https://www.zabbix.com/documentation/current/en/manual/appendix/items/activepassive)
+- VictoriaMetrics - гибрид, vmagent умеет push и pull (https://docs.victoriametrics.com/FAQ.html)
+- Nagios - гибрид, есть push (Passive check) (https://assets.nagios.com/downloads/nagioscore/docs/nagioscore/3/en/passivechecks.html), и pull (Active check) (https://assets.nagios.com/downloads/nagioscore/docs/nagioscore/3/en/activechecks.html)
+
+7.
+![Pic.1](10-monitoring/01-base/pics/chronograf.png "Pic. 1")
+
+8.
+![Pic.2](10-monitoring/01-base/pics/disk_usage.png "Pic. 2")
+
+9.
+![Pic.3](10-monitoring/01-base/pics/docker_measure.png "Pic. 3")
 
 ## Дополнительное задание
 
