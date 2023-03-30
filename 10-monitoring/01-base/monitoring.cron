@@ -1,0 +1,1 @@
+* * * * * root test -f /opt/monitoring/monitoring.py && cd /opt/monitoring && /usr/bin/python3 monitoring.py

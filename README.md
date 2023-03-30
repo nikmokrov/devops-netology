@@ -1,44 +1,126 @@
-# Домашнее задание к занятию 15 «Система сбора логов Elastic Stack»
-## Задание 1
+# Домашнее задание к занятию 13 «Введение в мониторинг»
+## Обязательные задания
 
-```console
-user@host:~/Netology/DEVOPS-22/devops-netology/10-monitoring/04-elk$ docker-compose up -d
-Creating network "04-elk_elastic" with driver "bridge"
-Creating network "04-elk_default" with the default driver
-Creating volume "04-elk_data01" with local driver
-Creating volume "04-elk_data02" with local driver
-Creating some_app ... done
-Creating es-warm  ... done
-Creating es-hot   ... done
-Creating kibana   ... done
-Creating logstash ... done
-Creating filebeat ... done
+1. Какой минимальный набор метрик вы выведите в мониторинг и почему?</br>
+Минимальный набор метрик должен выглядеть следующим образом.</br>
+- Система нагружает CPU, значит следим за средней загрузкой:
+  - CPU Load Average 1/5/15
+- Следим за использованием памяти, т.к. это напрямую влияет на производительность системы:
+  - Free RAM - количество оставшейся свободной памяти
+  - Free swap - использование подкачки
+- Система активно использует диск для сохранения отчетов, значит следим за диском:
+  - Used inodes / total inodes - количество свободных inodes, их отношение к общему количеству, % использованных, чтобы понимать, сколько еще отчетов можно сохранить (если считать, что один отчет = один файл)
+  - Free disk space - оставшееся свободное место на диске, чтобы заранее резервировать новое место
+  - IOPS - количество операций ввода/вывода в сек. - текущая нагрузка на диск
+- Взаимодействие с платформой осуществляется по протоколу http, поэтому:
+  - Доступность 80-го порта снаружи, из разных мест (геораспределенно). Система должна отвечать на http запросы.
+  - Количество кодов ответов 4хх и 5хх по отношению к общему количеству ответов в час. Это % доступности системы
+  - Время отклика, как быстро возвращается ответ на запрос к http-серверу
+- Кроме технических метрик потребуются бизнес-метрики для понимания того, насколько система выполняет наши обязательства перед клиентами:
+  - Сколько отчетов сгенерировано всего
+  - Количество ошибок генерации (проверка валидности отчета)
+  - Среднее количество генераций в минуту/час
+  - Среднее время генерации одного отчета
+  - Сколько запрашивается в минуту/час
+  - Наиболее популярные отчеты. Это нужно для лучшего понимания целевой аудитории, а также оптимизации запросов и БД (если она есть)
+  - Откуда идут запросы (привязка к геолокации). Это также нужно для работы с ЦА и для оптимизации маршрутов и балансировки нагрузки
 
-user@host:~/Netology/DEVOPS-22/devops-netology/10-monitoring/04-elk$ docker ps
-CONTAINER ID   IMAGE                                                  COMMAND                  CREATED         STATUS         PORTS                                                                                  NAMES
-b8f82ddd362d   docker.elastic.co/beats/filebeat:7.2.0                 "/usr/local/bin/dock…"   5 minutes ago   Up 5 minutes                                                                                          filebeat
-feca8ae258d7   docker.elastic.co/kibana/kibana:7.11.0                 "/bin/tini -- /usr/l…"   5 minutes ago   Up 5 minutes   0.0.0.0:5601->5601/tcp, :::5601->5601/tcp                                              kibana
-636b83ea5914   docker.elastic.co/logstash/logstash:6.3.2              "/usr/local/bin/dock…"   5 minutes ago   Up 5 minutes   5044/tcp, 9600/tcp                                                                     logstash
-da2586b7819e   docker.elastic.co/elasticsearch/elasticsearch:7.11.0   "/bin/tini -- /usr/l…"   5 minutes ago   Up 5 minutes   0.0.0.0:9200->9200/tcp, :::9200->9200/tcp, 9300/tcp                                    es-hot
-374458da5a6a   docker.elastic.co/elasticsearch/elasticsearch:7.11.0   "/bin/tini -- /usr/l…"   5 minutes ago   Up 5 minutes   9200/tcp, 9300/tcp                                                                     es-warm
-207b3e0b4b0f   python:3.9-alpine                                      "python3 /opt/run.py"    5 minutes ago   Up 5 minutes                                                                                          some_app
+2. Качество обслуживания предлагаю определять по метрикам из п.1.
+- Во-первых, это % доступности системы. Сколько времени в сутки/месяц/год система доступна и % возвращаемых ошибок (4хх и 5хх кодов). % доступности должен стремиться к 100%, т.е. система доступна 24/7/365, а % кодов 4хх и 5хх к 0%
+- Во-вторых, смотрим отношение сгенерированных отчетов с ошибками к их общему количеству. Условно это % выдаваемого брака, должен стремиться к 0.
+- В-третьих, как быстро в среднем генерируется отчет. Естественно, чем быстрее, тем лучше.
+- Наиболее популярные отчеты в месяц/квартал/год. Нужно для понимания, как меняются со временем запросы ЦА, для проактивной разработки новых типов отчетов
+и улучшения имеющихся
+
+3. Существуют варианты бесплатного построения системы сбора логов. Например, можно развернуть OpenSearch (полностью свободный аналог ELK стека), Zabbix или Prometheus/Grafana на бесплатных VDS от Google (https://cloud.google.com/free/), Oracle (https://www.oracle.com/cloud/free/), AWS (https://aws.amazon.com/ru/free/?all-free-tier.sort-by=item.additionalFields.SortRank&all-free-tier.sort-order=asc). Эти предложения действуют до 1 года, чего должно хватить до получения финансирования. Также существуют ограничения по производительности CPU, объему RAM/диска, сетевому трафику, их нужно учитывать при выборе бесплатного VDS исходя из внутренних потребностей компании.
+
+4. Забыли про коды 3хх (редиректы). Правильная формула должна выглядеть так: (summ_2xx_requests + summ_3xx_requests)/summ_all_requests
+</br>
+</br>
+
+## Дополнительное задание
+
+[monitoring.py](10-monitoring/01-base/monitoring.py)</br>
+
+```python
+#!/usr/bin/python3
+
+import json
+from datetime import datetime
+
+# collect metrics
+try:
+    with open('/proc/uptime', 'r', encoding='utf-8') as file:
+        uptime = file.readlines()[0].split()[0]
+except:
+    uptime = 0
+
+try:
+    with open('/proc/loadavg', 'r', encoding='utf-8') as file:
+        loads = file.readlines()[0].split()
+        load1 = loads[0]
+        load5 = loads[1]
+        load15 = loads[2]
+except:
+    load1 = 0
+    load5 = 0
+    load15 = 0
+
+try:
+    with open('/proc/stat', 'r', encoding='utf-8') as file:
+        procs = 0
+        swap_free = 0
+        stats = file.readlines()
+        for elem in stats:
+            if elem.find('processes') > -1:
+                procs = elem.split()[1]
+except:
+    procs = 0
+
+try:
+    with open('/proc/meminfo', 'r', encoding='utf-8') as file:
+        mem_free = 0
+        swap_free = 0
+        mems = file.readlines()
+        for elem in mems:
+            if elem.find('MemFree:') > -1:
+                mem_free = elem.split()[1]
+            if elem.find('SwapFree:') > -1:
+                swap_free = elem.split()[1]
+except:
+    mem_free = 0
+    swap_free = 0
+
+# format log data
+today = datetime.today()
+status_log = datetime.strftime(today, "%Y-%m-%d") + '-awesome-monitoring.log'
+metrics = [uptime, load1, load5, load15, procs, mem_free, swap_free]
+log_data = {int(today.timestamp()): metrics}
+
+# write log
+try:
+    with open(status_log, 'a', encoding='utf-8') as file:
+        json.dump(log_data, file)
+        print(file=file)
+except:
+    pass
 
 ```
 
-![Pic. 1](10-monitoring/04-elk/pics/kibana.png "Pic. 1")
+[monitoring.cron](10-monitoring/01-base/monitoring.cron)</br>
+```console
+* * * * * root test -f /opt/monitoring/monitoring.py && cd /opt/monitoring && /usr/bin/python3 monitoring.py
+```
 
-[docker-compose.yml](10-monitoring/04-elk/docker-compose.yml)</br>
-[logstash.yml](10-monitoring/04-elk/configs/logstash.yml)</br>
-[logstash.conf](10-monitoring/04-elk/configs/logstash.conf)</br>
-[filebeat.yml](10-monitoring/04-elk/configs/filebeat.yml)</br>
-</br>
-</br>
-</br>
 
-## Задание 2
+```console
+root@host:/opt/monitoring# cat 2023-03-30-awesome-monitoring.log 
+{"1680162361": ["9552.82", "0.13", "0.26", "0.39", "17137", "22733684", "8388604"]}
+{"1680162421": ["9612.84", "0.19", "0.25", "0.38", "17245", "22587432", "8388604"]}
+{"1680162481": ["9672.87", "0.23", "0.25", "0.36", "17329", "22490376", "8388604"]}
+{"1680162541": ["9732.89", "0.16", "0.22", "0.35", "17340", "22495984", "8388604"]}
+{"1680162601": ["9792.92", "0.27", "0.24", "0.35", "17386", "22695096", "8388604"]}
 
-![Pic. 2](10-monitoring/04-elk/pics/index.png "Pic. 2")
-![Pic. 3](10-monitoring/04-elk/pics/index_pattern.png "Pic. 3")
-![Pic. 4](10-monitoring/04-elk/pics/logstash_index_pattern.png "Pic. 4")
-![Pic. 5](10-monitoring/04-elk/pics/discover.png "Pic. 5")
-![Pic. 6](10-monitoring/04-elk/pics/discover_filter.png "Pic. 6")
+
+```
+
