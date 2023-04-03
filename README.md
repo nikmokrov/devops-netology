@@ -1,157 +1,35 @@
-# Домашнее задание к занятию 13 «Введение в мониторинг»
-## Обязательные задания
+# Домашнее задание к занятию 16 «Платформа мониторинга Sentry»
+## Задание 1
+![Pic.1](10-monitoring/05-sentry/pics/projects.png "Pic. 1")
 
-1. Какой минимальный набор метрик вы выведите в мониторинг и почему?</br>
-Минимальный набор метрик должен выглядеть следующим образом.</br>
-- Система нагружает CPU, значит следим за средней загрузкой:
-  - CPU Load Average 1/5/15
-- Следим за использованием памяти, т.к. это напрямую влияет на производительность системы:
-  - Free RAM - количество оставшейся свободной памяти
-  - Free swap - использование подкачки
-- Система активно использует диск для сохранения отчетов, значит следим за диском:
-  - Used inodes / total inodes - количество свободных inodes, их отношение к общему количеству, % использованных, чтобы понимать, сколько еще отчетов можно сохранить (если считать, что один отчет = один файл)
-  - Free disk space - оставшееся свободное место на диске, чтобы заранее резервировать новое место
-  - IOPS - количество операций ввода/вывода в сек. - текущая нагрузка на диск
-- Взаимодействие с платформой осуществляется по протоколу http, поэтому:
-  - Доступность 80-го порта снаружи, из разных мест (геораспределенно). Система должна отвечать на http запросы.
-  - Количество кодов ответов 4хх и 5хх по отношению к общему количеству ответов в час. Это % доступности системы
-  - Время отклика, как быстро возвращается ответ на запрос к http-серверу
-- Кроме технических метрик потребуются бизнес-метрики для понимания того, насколько система выполняет наши обязательства перед клиентами:
-  - Сколько отчетов сгенерировано всего
-  - Количество ошибок генерации (проверка валидности отчета)
-  - Среднее количество генераций в минуту/час
-  - Среднее время генерации одного отчета
-  - Сколько запрашивается в минуту/час
-  - Наиболее популярные отчеты. Это нужно для лучшего понимания целевой аудитории, а также оптимизации запросов и БД (если она есть)
-  - Откуда идут запросы (привязка к геолокации). Это также нужно для работы с ЦА и для оптимизации маршрутов и балансировки нагрузки
+## Задание 2
+![Pic.2](10-monitoring/05-sentry/pics/stack_trace.png "Pic. 2")
+![Pic.3](10-monitoring/05-sentry/pics/resolved.png "Pic. 3")
 
-2. Качество обслуживания предлагаю определять по метрикам из п.1.
-- Во-первых, это % доступности системы. Сколько времени в сутки/месяц/год система доступна и % возвращаемых ошибок (4хх и 5хх кодов). % доступности должен стремиться к 100%, т.е. система доступна 24/7/365, а % кодов 4хх и 5хх к 0%
-- Во-вторых, смотрим отношение сгенерированных отчетов с ошибками к их общему количеству. Условно это % выдаваемого брака, должен стремиться к 0.
-- В-третьих, как быстро в среднем генерируется отчет. Естественно, чем быстрее, тем лучше.
-- Наиболее популярные отчеты в месяц/квартал/год. Нужно для понимания, как меняются со временем запросы ЦА, для проактивной разработки новых типов отчетов
-и улучшения имеющихся
+## Задание 3
+![Pic.4](10-monitoring/05-sentry/pics/mail_alert.png "Pic. 4")
 
-3. Существуют варианты бесплатного построения системы сбора логов. Например, можно развернуть OpenSearch (полностью свободный аналог ELK стека), Zabbix или Prometheus/Grafana на бесплатных VDS от Google (https://cloud.google.com/free/), Oracle (https://www.oracle.com/cloud/free/), AWS (https://aws.amazon.com/ru/free/?all-free-tier.sort-by=item.additionalFields.SortRank&all-free-tier.sort-order=asc). Эти предложения действуют до 1 года, чего должно хватить до получения финансирования. Также существуют ограничения по производительности CPU, объему RAM/диска, сетевому трафику, их нужно учитывать при выборе бесплатного VDS исходя из внутренних потребностей компании.
+## Задание повышенной сложности
+![Pic.5](10-monitoring/05-sentry/pics/sdk_event.png "Pic. 5")
+![Pic.6](10-monitoring/05-sentry/pics/sdk_filenotfound.png "Pic. 6")
 
-4. Забыли про коды 3хх (редиректы). Правильная формула должна выглядеть так: (summ_2xx_requests + summ_3xx_requests)/summ_all_requests
-
-5. Опишите основные плюсы и минусы pull и push систем мониторинга.</br>
-- Основные достоинства pull модели:</br>
-  - Централизованное конфигурирование, вся конфигурация в одном месте
-  - Проще контролировать достоверность и безопасность данных, т.к. сервер является инициатором соединения
-  - Контролируемое масштабирование системы, собираем данные только из указанных источников
-  - Более контролируемое поступление данных (on demand), а также проще отлаживать проблемы (как минимум, проще понять, на какой стороне проблема)
-  - Производительность зависит в большей степени от сервера
- 
-- Основные достоинства push модели:</br>
-  - Упрощенное обнаружение новых объектов мониторинга, агенты сами докладывают о появившихся объектах
-  - Не нужны постоянно открытые порты, через которые передаются метрики
-  - Меньшие накладные расходы на передачу данных (благодаря использованию UDP)
-  - Производительность зависит в большей степени от агентов
-  - Более простая репликация данных, агенты могут слать данные на несколько серверов одновременно
-  - Меньше вероятность потери метрик, т.к. период опроса может быть достаточно небольшим, а также метрики можно слать пакетами
-  - Ниже расходы на обслуживание (O&M Cost)
-
-6. Какие из ниже перечисленных систем относятся к push модели, а какие к pull? А может есть гибридные?
-- Prometheus - pull, но возможен и push (https://prometheus.io/docs/instrumenting/pushing/)
-- TICK - push
-- Zabbix - гибрид, есть active и passive checks (https://www.zabbix.com/documentation/current/en/manual/appendix/items/activepassive)
-- VictoriaMetrics - гибрид, vmagent умеет push и pull (https://docs.victoriametrics.com/FAQ.html)
-- Nagios - гибрид, есть push (Passive check) (https://assets.nagios.com/downloads/nagioscore/docs/nagioscore/3/en/passivechecks.html), и pull (Active check) (https://assets.nagios.com/downloads/nagioscore/docs/nagioscore/3/en/activechecks.html)
-
-7.
-![Pic.1](10-monitoring/01-base/pics/chronograf.png "Pic. 1")
-
-8.
-![Pic.2](10-monitoring/01-base/pics/disk_usage.png "Pic. 2")
-
-9.
-![Pic.3](10-monitoring/01-base/pics/docker_measure.png "Pic. 3")
-
-## Дополнительное задание
-
-[monitoring.py](10-monitoring/01-base/monitoring.py)</br>
+[sentry_test.py](10-monitoring/05-sentry/sentry_test.py)</br>
 
 ```python
 #!/usr/bin/python3
 
-import json
-from datetime import datetime
+import sentry_sdk
+sentry_sdk.init(
+    dsn="https://8d72dad0518f42219038ed399eff3ea0@o4504948857110528.ingest.sentry.io/4504948859338752",
 
-# collect metrics
-try:
-    with open('/proc/uptime', 'r', encoding='utf-8') as file:
-        uptime = file.readlines()[0].split()[0]
-except:
-    uptime = 0
+    traces_sample_rate=1.0,
+    release="0.0.1",
+    environment="dev",
+    dist="python 3.9"
+)
 
-try:
-    with open('/proc/loadavg', 'r', encoding='utf-8') as file:
-        loads = file.readlines()[0].split()
-        load1 = loads[0]
-        load5 = loads[1]
-        load15 = loads[2]
-except:
-    load1 = 0
-    load5 = 0
-    load15 = 0
-
-try:
-    with open('/proc/stat', 'r', encoding='utf-8') as file:
-        procs = 0
-        swap_free = 0
-        stats = file.readlines()
-        for elem in stats:
-            if elem.find('processes') > -1:
-                procs = elem.split()[1]
-except:
-    procs = 0
-
-try:
-    with open('/proc/meminfo', 'r', encoding='utf-8') as file:
-        mem_free = 0
-        swap_free = 0
-        mems = file.readlines()
-        for elem in mems:
-            if elem.find('MemFree:') > -1:
-                mem_free = elem.split()[1]
-            if elem.find('SwapFree:') > -1:
-                swap_free = elem.split()[1]
-except:
-    mem_free = 0
-    swap_free = 0
-
-# format log data
-today = datetime.today()
-status_log = datetime.strftime(today, "%Y-%m-%d") + '-awesome-monitoring.log'
-metrics = [uptime, load1, load5, load15, procs, mem_free, swap_free]
-log_data = {int(today.timestamp()): metrics}
-
-# write log
-try:
-    with open(status_log, 'a', encoding='utf-8') as file:
-        json.dump(log_data, file)
-        print(file=file)
-except:
-    pass
+with open('test123.txt', 'r') as file:
+    content = file.readlines()
+    print(content)
 
 ```
-
-[monitoring.cron](10-monitoring/01-base/monitoring.cron)</br>
-```console
-* * * * * root test -f /opt/monitoring/monitoring.py && cd /opt/monitoring && /usr/bin/python3 monitoring.py
-```
-
-
-```console
-root@host:/opt/monitoring# cat 2023-03-30-awesome-monitoring.log 
-{"1680162361": ["9552.82", "0.13", "0.26", "0.39", "17137", "22733684", "8388604"]}
-{"1680162421": ["9612.84", "0.19", "0.25", "0.38", "17245", "22587432", "8388604"]}
-{"1680162481": ["9672.87", "0.23", "0.25", "0.36", "17329", "22490376", "8388604"]}
-{"1680162541": ["9732.89", "0.16", "0.22", "0.35", "17340", "22495984", "8388604"]}
-{"1680162601": ["9792.92", "0.27", "0.24", "0.35", "17386", "22695096", "8388604"]}
-
-
-```
-
