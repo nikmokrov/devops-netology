@@ -1,0 +1,64 @@
+---
+- name: Install Redis
+  hosts: redis-nodes
+  handlers:
+    - name: Restart redis service
+      become: true
+      ansible.builtin.systemd:
+        name: "redis"
+        state: restarted
+    - name: Restart redis6380 service
+      become: true
+      ansible.builtin.systemd:
+        name: "redis6380"
+        state: restarted
+        daemon_reload: true
+  pre_tasks:
+    - name: Install some useful packages
+      become: true
+      ansible.builtin.apt:
+        name: "{{ useful_packages }}"
+        state: present
+        update_cache: true
+  tasks:
+    - name: Install redis packages
+      become: true
+      ansible.builtin.apt:
+        name: "{{ redis_packages }}"
+        state: present
+    - name: Generate redis server config
+      become: true
+      ansible.builtin.template:
+        src: "./templates/redis/server-config.j2"
+        dest: "/etc/redis/redis.conf"
+        owner: redis
+        group: redis
+        mode: '0640'
+    - name: Generate redis6380 server config
+      become: true
+      ansible.builtin.template:
+        src: "./templates/redis/server-config6380.j2"
+        dest: "/etc/redis/redis6380.conf"
+        owner: redis
+        group: redis
+        mode: '0640'  
+    - name: Generate redis6380 service config
+      become: true
+      ansible.builtin.template:
+        src: "./templates/redis/service-config6380.j2"
+        dest: "/lib/systemd/system/redis-server6380.service"
+        owner: root
+        group: root
+        mode: '0644'                
+    - name: Create a symbolic link for redis6380 service
+      become: true
+      ansible.builtin.file:
+        src: /lib/systemd/system/redis-server6380.service
+        dest: /etc/systemd/system/redis6380.service
+        owner: root
+        group: root
+        state: link
+      notify: Restart redis service
+      notify: Restart redis6380 service
+    - name: Flush handlers
+      meta: flush_handlers
