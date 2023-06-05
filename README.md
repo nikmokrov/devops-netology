@@ -1,127 +1,173 @@
-# Домашнее задание к занятию «Микросервисы: принципы»
+## Домашнее задание к занятию «Микросервисы: масштабирование»
 
-## Задача 1: API Gateway
-|  | Kong | Tyk | Express Gateway | Apache APISIX | Azure API Management |
-|--|------|-----|-----------------|---------------|----------------------|
-| **Размещение** | Собств. инфр-а/Облако | Собств. инфр-а/Облако | Собств. инфр-а | Собств. инфр-а/Облако | Собств. инфр-а(Docker)/Облако |
-| **Open Source** | Да | Да | Да | Да | Нет |
-| **Технология** | Nginx, Lua | GoLang | Node.js,Express | Nginx, Lua | - |
-| **Сообщество** | Большое | Среднее | Маленькое | Маленькое | Большое |
-| **Конфигурация** | YAML | JSON | YAML/JSON | YAML | WebAPI/PowerShell |
-| **Безопасность (аутентификация и авторизация)** | Да | Да | Да | Да | Да |
-| **HTTPS** | Да | Да | Да | Да | Да |
-| **Стоимость** | Бесплатно/Подписка | Бесплатно/Подписка | Бесплатно | Бесплатно | Подписка |
+# Задача 1: Кластеризация
 
-Я бы выбрал в качестве API Gateway Kong. Это очень популярное open-source решение, основанное на Nginx и позволяющее расширять функционал с помощью языка Lua.
-Широкая поддержка сообществом, множество готовых Lua-скриптов для разных задач. Имеется возможность установки как на собственной инфраструктуре, так и в облаке.
-Полностью совместимая с Kubernetes архитектура. Благодаря основе в виде Nginx обеспечивается высокая производительность, балансировка, proxy-кеширование. Поддерживается большинство популярных протоколов: REST, GraphQL, gRPC. Все возможности для автоматизации в соответствии с принципами DevOps и GitOps.</br>
+Очевидным выбором станет Kubernetes - система оркестрации контейнеров, позволяющая автоматизировать развертывание, 
+масштабирование, репликацию и мониторинг контейнерных приложений.
 
-Kong полностью соответствует требованиям задания:
-- может маршрутизировать запросы к нужному сервису на основе конфигурации (Nginx в основе)
-- возможность проверки аутентификации (Key Authentication, OAuth 2.0, LDAP, OpenID)
-- обеспечивает терминацию HTTPS
-</br>
-</br>
+Решение полностью удовлетворяет всем требованиям:
 
-## Задача 2: Брокер сообщений
-|  | Kafka | RabbitMQ | Memphis | Redis |
-|--|-------|----------|---------|-------|
-| **Open Source** | Да (Apache 2.0) | Да (Mozilla Public) | Да (BSL 1.0) | Да (BSD) |
-| **Метод доставки** | Pull | Push | Pull | Pull/Push |
-| **Кластеризация** | Да | Да | Да | Да | 
-| **Хранение на диске** | Да (Log) | Да (Index) | Да (Log) | Нет(In-memory) |
-| **Скорость (1 queue)** | 280K msg/sec | 50K msg/sec | 300K msg/sec | 1000K msg/sec |
-| **Форматы сообщений** | Да | Да | Да | Да |
-| **Разделение прав** | Да | Да | Нет | Нет |
-| **Простота эксплуатации** | Выше средней | Средняя | Простая | Простая |
+- поддерживает контейнеры, разумеется, причем сразу несколько сред исполнения: Docker, containerd, CRI-O;
+- умеет выполнять обнаружение сервисов с помощью DNS или переменных окружения и маршрутизацию запросов (kube-proxy);
+- горизонтальное масштабирование обеспечивается службой Horizontal Pod Autoscaler (HPA), которая автоматически масштабирует количество подов,
+причем показатели для масштабирования могут быть произвольными благодяря API Custom Metrics;
+- автоматическое масштабирование кластера (Cluster Autoscaler) позволяет постепенно увеличивать или уменьшать число узлов в группе 
+(до указанного максимального и минимального размера) в зависимости от нагрузки на кластер;
+- явное разделение ресурсов, доступных извне и внутри системы, обеспечивается при помощи пространств имён (namespaces);
+- возможность конфигурировать приложения с помощью переменных среды имеется, в том числе в переменные среды можно
+ передавать чувствительные данные (пароли, ключи доступа, ключи шифрования) из специального ресурса - Kubernetes Secrets
 
-Apache Kafka хорошо подойдет в качестве брокера сообщений. Это популярный выбор для обеспечения потоковой передачи данных без сложной маршрутизации, но с максимальной пропускной способностью. Эту систему выбирают, когда важны масштабируемость и доставка сообщений в правильном порядке.
-Kafka удовлетворяет следующим условиям:
-- поддерживает кластеризацию благодаря встроенной службе координации ZooKeeper 
-- хранит сообщения на диске в процессе доставки, в отличие от Redis
-- обеспечивает высокую скорость работы, сравнимую с Memphis, и гораздо выше RabbitMQ
-- может передавать сообщения практически любых форматов через сериализацию данных (сами сообщения передаются в бинарном виде)
-- поддерживает разделение прав доступа через механизм Role-Based Access Control (RBAC)
-- Kafka является не самым простым в настройке и эксплуатации по отношению к остальным выбранным для сравнения брокером, однако по совокупности характеристик лучше удовлетворяет прочим условиям задания
-</br>
-</br>
+ В качестве альтернативы Kubernetes можно рассмотреть систему HashiCorp Nomad. Nomad более универсален за счет поддержки не только контейнеризованных
+ приложений (поддерживаются микросервисные и пакетные приложения, включая Docker, Java, Qemu и др.). Nomad проще в развертывании, он доступен как в виде
+ бинарного файла, так и в виде готовых пакетов для различных операционных систем, а также может быть собран из исходников. Nomad поддерживает большее
+ число узлов и контейнеров в кластере, и в целом несколько производительнее. В Nomad имеется и горизонтальное и автомасштабирование кластера, а также
+ поддерживаются namespaces. К недостаткам Nomad можно отнести отсутствие встроенной возможности обнаружения сервисов, для этого необходимо использовать 
+ связку с Consul, а также он проигрывает в плане безопасности, для хранения чувствительных данных придется использовать стороннюю систему Vault.
 
-## Задача 3: API Gateway * (необязательная)
+ # Задача 2: Распределённый кеш
 
-[docker-compose.yaml](11-microservices/02-principles/docker-compose.yaml)</br>
-[nginx.conf](11-microservices/02-principles/gateway/nginx.conf)</br>
+ 1. Создаем 3 ноды с помощью Terraform</br>
+ [main.tf](11-microservices/04-scaling/terraform/main.tf)</br>
 
-```console
-user@host:~/Netology/DEVOPS-22/devops-netology/11-microservices/02-principles$ docker-compose up -d --build
-Creating network "02-principles_default" with the default driver
-Building uploader
-Step 1/6 : FROM node:alpine
- ---> 8e7579c71aa8
-Step 2/6 : WORKDIR /app
- ---> Using cache
- ---> 796675f0b5d5
-Step 3/6 : COPY package*.json ./
- ---> Using cache
- ---> 4eb5257fd3a5
-Step 4/6 : RUN npm install
- ---> Using cache
- ---> 21c1e57e2628
-Step 5/6 : COPY src ./
- ---> Using cache
- ---> f193d933f395
-Step 6/6 : CMD ["node", "server.js"]
- ---> Using cache
- ---> 5a2d367a008b
-Successfully built 5a2d367a008b
-Successfully tagged 02-principles_uploader:latest
-Building security
-Step 1/6 : FROM python:3.9-alpine
- ---> 1353482c9f85
-Step 2/6 : WORKDIR /app
- ---> Using cache
- ---> 8f6f5b709865
-Step 3/6 : COPY requirements.txt .
- ---> Using cache
- ---> bcecb4864fa9
-Step 4/6 : RUN pip install -r requirements.txt
- ---> Using cache
- ---> 6f80050c10c3
-Step 5/6 : COPY src ./
- ---> Using cache
- ---> eb96c0a0d036
-Step 6/6 : CMD [ "python", "./server.py" ]
- ---> Using cache
- ---> a8da058a017b
-Successfully built a8da058a017b
-Successfully tagged 02-principles_security:latest
-Creating 02-principles_security_1 ... done
-Creating 02-principles_storage_1  ... done
-Creating 02-principles_createbuckets_1 ... done
-Creating 02-principles_uploader_1      ... done
-Creating 02-principles_gateway_1       ... done
+ 2. Устанавливаем и настраиваем по 2 инстанса Redis на каждой ноде с помощью Ansible</br>
+ [site.yml](11-microservices/04-scaling/playbook/site.yml)</br>
 
-user@host:~/Netology/DEVOPS-22/devops-netology/11-microservices/02-principles$ docker ps
-CONTAINER ID   IMAGE                    COMMAND                  CREATED         STATUS                   PORTS                                           NAMES
-bbd556527a7c   nginx:alpine             "/docker-entrypoint.…"   5 minutes ago   Up 5 minutes             80/tcp, 0.0.0.0:80->8080/tcp, :::80->8080/tcp   02-principles_gateway_1
-312541c6bd7b   02-principles_uploader   "docker-entrypoint.s…"   5 minutes ago   Up 5 minutes             3000/tcp                                        02-principles_uploader_1
-f52cc80d069f   minio/minio:latest       "/usr/bin/docker-ent…"   5 minutes ago   Up 5 minutes (healthy)   9000/tcp                                        02-principles_storage_1
-2c3f3cad4292   02-principles_security   "python ./server.py"     5 minutes ago   Up 5 minutes             3000/tcp                                        02-principles_security_1
+ 3. Собираем кластер согласно схеме. Сначала создаем кластер из 3-х нод без репликации, а затем последовательно добавляем 3 реплики.
+ ```console
+user@host:~/Облако/Documents/Netology/DEVOPS-22/tools/redis$ ./redis-cli -h 158.160.25.2 -a VeryVeryStrongPass --cluster create 158.160.25.2:6379 158.160.4.136:6379 158.160.6.230:6379 --cluster-replicas 0 --cluster-yes
+Warning: Using a password with '-a' or '-u' option on the command line interface may not be safe.
+>>> Performing hash slots allocation on 3 nodes...
+Master[0] -> Slots 0 - 5460
+Master[1] -> Slots 5461 - 10922
+Master[2] -> Slots 10923 - 16383
+M: 78cbbd0c7e2d24d117c63bca27d733916d0d77f7 158.160.25.2:6379
+   slots:[0-5460] (5461 slots) master
+M: 960c5c8d76ac3058f4b38d4cad88f3c611b6a8d2 158.160.4.136:6379
+   slots:[5461-10922] (5462 slots) master
+M: cda4d56beda7cc91ff1b5f397c0ffb47dcb4e621 158.160.6.230:6379
+   slots:[10923-16383] (5461 slots) master
+>>> Nodes configuration updated
+>>> Assign a different config epoch to each node
+>>> Sending CLUSTER MEET messages to join the cluster
+Waiting for the cluster to join
+.
+>>> Performing Cluster Check (using node 158.160.25.2:6379)
+M: 78cbbd0c7e2d24d117c63bca27d733916d0d77f7 158.160.25.2:6379
+   slots:[0-5460] (5461 slots) master
+M: cda4d56beda7cc91ff1b5f397c0ffb47dcb4e621 158.160.6.230:6379
+   slots:[10923-16383] (5461 slots) master
+M: 960c5c8d76ac3058f4b38d4cad88f3c611b6a8d2 158.160.4.136:6379
+   slots:[5461-10922] (5462 slots) master
+[OK] All nodes agree about slots configuration.
+>>> Check for open slots...
+>>> Check slots coverage...
+[OK] All 16384 slots covered.
 
-user@host:~/Netology/DEVOPS-22/devops-netology/11-microservices/02-principles$ curl -X POST -H 'Content-Type: application/json' -d '{"login":"bob", "password":"qwe123"}' http://localhost/v1/token
+user@host:~/Облако/Documents/Netology/DEVOPS-22/tools/redis$ ./redis-cli -h 158.160.25.2 -a VeryVeryStrongPass --cluster add-node 158.160.6.230:6380 158.160.25.2:6379 --cluster-slave --cluster-master-id 78cbbd0c7e2d24d117c63bca27d733916d0d77f7 --cluster-yes
+Warning: Using a password with '-a' or '-u' option on the command line interface may not be safe.
+>>> Adding node 158.160.6.230:6380 to cluster 158.160.25.2:6379
+>>> Performing Cluster Check (using node 158.160.25.2:6379)
+M: 78cbbd0c7e2d24d117c63bca27d733916d0d77f7 158.160.25.2:6379
+   slots:[0-5460] (5461 slots) master
+M: cda4d56beda7cc91ff1b5f397c0ffb47dcb4e621 158.160.6.230:6379
+   slots:[10923-16383] (5461 slots) master
+M: 960c5c8d76ac3058f4b38d4cad88f3c611b6a8d2 158.160.4.136:6379
+   slots:[5461-10922] (5462 slots) master
+[OK] All nodes agree about slots configuration.
+>>> Check for open slots...
+>>> Check slots coverage...
+[OK] All 16384 slots covered.
+>>> Send CLUSTER MEET to node 158.160.6.230:6380 to make it join the cluster.
+Waiting for the cluster to join
 
-eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJib2IifQ.hiMVLmssoTsy1MqbmIoviDeFPvo-nCd92d4UFiN2O2I
+>>> Configure node as replica of 158.160.25.2:6379.
+[OK] New node added correctly.
+user@host:~/Облако/Documents/Netology/DEVOPS-22/tools/redis$ ./redis-cli -h 158.160.25.2 -a VeryVeryStrongPass --cluster add-node 158.160.25.2:6380 158.160.25.2:6379 --cluster-slave --cluster-master-id 960c5c8d76ac3058f4b38d4cad88f3c611b6a8d2 --cluster-yes
+Warning: Using a password with '-a' or '-u' option on the command line interface may not be safe.
+>>> Adding node 158.160.25.2:6380 to cluster 158.160.25.2:6379
+>>> Performing Cluster Check (using node 158.160.25.2:6379)
+M: 78cbbd0c7e2d24d117c63bca27d733916d0d77f7 158.160.25.2:6379
+   slots:[0-5460] (5461 slots) master
+   1 additional replica(s)
+M: cda4d56beda7cc91ff1b5f397c0ffb47dcb4e621 158.160.6.230:6379
+   slots:[10923-16383] (5461 slots) master
+M: 960c5c8d76ac3058f4b38d4cad88f3c611b6a8d2 158.160.4.136:6379
+   slots:[5461-10922] (5462 slots) master
+S: 3139bdf61ca0537dc949d7637e7375c0dd11d60f 158.160.6.230:6380
+   slots: (0 slots) slave
+   replicates 78cbbd0c7e2d24d117c63bca27d733916d0d77f7
+[OK] All nodes agree about slots configuration.
+>>> Check for open slots...
+>>> Check slots coverage...
+[OK] All 16384 slots covered.
+>>> Send CLUSTER MEET to node 158.160.25.2:6380 to make it join the cluster.
+Waiting for the cluster to join
 
-user@host:~/Netology/DEVOPS-22/devops-netology/11-microservices/02-principles$ curl -X GET -H 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJib2IifQ.hiMVLmssoTsy1MqbmIoviDeFPvo-nCd92d4UFiN2O2I' http://localhost/v1/token/validation
+>>> Configure node as replica of 158.160.4.136:6379.
+[OK] New node added correctly.
 
-{"sub":"bob"}
+user@host:~/Облако/Documents/Netology/DEVOPS-22/tools/redis$ ./redis-cli -h 158.160.25.2 -a VeryVeryStrongPass --cluster add-node 158.160.4.136:6380 158.160.25.2:6379 --cluster-slave --cluster-master-id 960c5c8d76ac3058f4b38d4cad88f3c611b6a8d2 --cluster-yes
+Warning: Using a password with '-a' or '-u' option on the command line interface may not be safe.
+>>> Adding node 158.160.4.136:6380 to cluster 158.160.25.2:6379
+>>> Performing Cluster Check (using node 158.160.25.2:6379)
+M: 78cbbd0c7e2d24d117c63bca27d733916d0d77f7 158.160.25.2:6379
+   slots:[0-5460] (5461 slots) master
+   1 additional replica(s)
+S: 21e1aa07775e51a8136ce025671685a0428bd94b 158.160.25.2:6380
+   slots: (0 slots) slave
+   replicates 960c5c8d76ac3058f4b38d4cad88f3c611b6a8d2
+M: 960c5c8d76ac3058f4b38d4cad88f3c611b6a8d2 158.160.4.136:6379
+   slots:[5461-10922] (5462 slots) master
+   1 additional replica(s)
+M: cda4d56beda7cc91ff1b5f397c0ffb47dcb4e621 158.160.6.230:6379
+   slots:[10923-16383] (5461 slots) master
+S: 3139bdf61ca0537dc949d7637e7375c0dd11d60f 158.160.6.230:6380
+   slots: (0 slots) slave
+   replicates 78cbbd0c7e2d24d117c63bca27d733916d0d77f7
+[OK] All nodes agree about slots configuration.
+>>> Check for open slots...
+>>> Check slots coverage...
+[OK] All 16384 slots covered.
+>>> Send CLUSTER MEET to node 158.160.4.136:6380 to make it join the cluster.
+Waiting for the cluster to join
 
-user@host:~/Netology/DEVOPS-22/devops-netology/11-microservices/02-principles$ curl -X POST -H 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJib2IifQ.hiMVLmssoTsy1MqbmIoviDeFPvo-nCd92d4UFiN2O2I' -H 'Content-Type: octet/stream' --data-binary @uptime-501.jpg http://localhost/v1/upload
+>>> Configure node as replica of 158.160.4.136:6379.
+[OK] New node added correctly.
 
-{"filename":"5334101e-4534-4460-9004-1abee1b29edd.jpg"}
+user@host:~/Облако/Documents/Netology/DEVOPS-22/tools/redis$ ./redis-cli -h 158.160.25.2 -a VeryVeryStrongPass
+Warning: Using a password with '-a' or '-u' option on the command line interface may not be safe.
+158.160.25.2:6379> cluster nodes
+21e1aa07775e51a8136ce025671685a0428bd94b 158.160.25.2:6380@16380 slave cda4d56beda7cc91ff1b5f397c0ffb47dcb4e621 0 1685947722429 3 connected
+960c5c8d76ac3058f4b38d4cad88f3c611b6a8d2 158.160.4.136:6379@16379 master - 0 1685947724435 2 connected 5461-10922
+cda4d56beda7cc91ff1b5f397c0ffb47dcb4e621 158.160.6.230:6379@16379 master - 0 1685947720422 3 connected 10923-16383
+3139bdf61ca0537dc949d7637e7375c0dd11d60f 158.160.6.230:6380@16380 slave 78cbbd0c7e2d24d117c63bca27d733916d0d77f7 0 1685947723432 1 connected
+78cbbd0c7e2d24d117c63bca27d733916d0d77f7 10.129.0.35:6379@16379 myself,master - 0 1685947723000 1 connected 0-5460
+9869860e75a791ffd0767cb99438e0a0f7f4dc7d 158.160.4.136:6380@16380 slave 960c5c8d76ac3058f4b38d4cad88f3c611b6a8d2 0 1685947724000 2 connected
 
-user@host:~/Netology/DEVOPS-22/devops-netology/11-microservices/02-principles$ curl -X GET http://localhost/image/5334101e-4534-4460-9004-1abee1b29edd.jpg > 5334101e-4534-4460-9004-1abee1b29edd.jpg
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100 32000  100 32000    0     0  3906k      0 --:--:-- --:--:-- --:--:-- 3906k
+158.160.25.2:6379> cluster slots
+1) 1) (integer) 5461
+   2) (integer) 10922
+   3) 1) "158.160.4.136"
+      2) (integer) 6379
+      3) "960c5c8d76ac3058f4b38d4cad88f3c611b6a8d2"
+   4) 1) "158.160.4.136"
+      2) (integer) 6380
+      3) "9869860e75a791ffd0767cb99438e0a0f7f4dc7d"
+2) 1) (integer) 10923
+   2) (integer) 16383
+   3) 1) "158.160.6.230"
+      2) (integer) 6379
+      3) "cda4d56beda7cc91ff1b5f397c0ffb47dcb4e621"
+   4) 1) "158.160.25.2"
+      2) (integer) 6380
+      3) "21e1aa07775e51a8136ce025671685a0428bd94b"
+3) 1) (integer) 0
+   2) (integer) 5460
+   3) 1) "10.129.0.35"
+      2) (integer) 6379
+      3) "78cbbd0c7e2d24d117c63bca27d733916d0d77f7"
+   4) 1) "158.160.6.230"
+      2) (integer) 6380
+      3) "3139bdf61ca0537dc949d7637e7375c0dd11d60f"
 
-```
+ ```
