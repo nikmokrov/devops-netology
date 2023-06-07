@@ -1,0 +1,44 @@
+---
+- name: Install microk8s
+  hosts: microk8s
+  handlers:
+    - name: Pause before regenerate certs
+      ansible.builtin.pause:
+        seconds: 15
+    - name: Regenerate certs
+      become: true
+      ansible.builtin.shell: microk8s refresh-certs --cert front-proxy-client.crt 
+  pre_tasks:
+    - name: Install some useful packages
+      become: true
+      ansible.builtin.apt:
+        name: "{{ useful_packages }}"
+        state: present
+        update_cache: true
+  tasks:
+    - name: Install microk8s
+      become: true
+      community.general.snap:
+        name: "microk8s"
+        state: present
+        classic: true
+    - name: Add user to microk8s group
+      become: true
+      ansible.builtin.user:
+        name: ubuntu
+        append: true
+        groups: microk8s
+    - name: Enable microk8s dashboard
+      become: true
+      ansible.builtin.shell: microk8s enable dashboard         
+    - name: Append external IP to csr.conf.template
+      ansible.builtin.lineinfile:
+        path: /var/snap/microk8s/current/certs/csr.conf.template
+        insertafter: '^IP.1'
+        line: 'IP.2 = {{ ansible_host }}'
+      notify: 
+        - Pause before regenerate certs
+        - Regenerate certs
+
+    # - name: Flush handlers
+    #   meta: flush_handlers
