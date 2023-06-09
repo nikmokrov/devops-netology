@@ -1,66 +1,118 @@
-# Домашнее задание к занятию «Микросервисы: подходы»
+# Домашнее задание к занятию «Базовые объекты K8S»
 
-## Задача 1: Обеспечить разработку
+## Задание 1. Создать Pod с именем hello-world
 
-Для обеспечения разработки подойдет GitLab - комплексное решение, позволяющее как хранить код в git, так и организовывать CI/CD процессы.
+[Манифест Task1.yml](12-kuber/2-baseobj/task1.yml)
 
-Такое решение будет соответствовать всем требованиям:
-- облачная система - GitLab может быть развернут как в облаке, так и на собственной инфраструктуре;
-- система контроля версий Git - основная функция GitLab, встроенный сервер git;
-- репозиторий на каждый сервис - GitLab поддерживает неограниченное количество репозиториев, как public, так и private;
-- запуск сборки по событию из системы контроля версий - GitLab CI/CD pipelines можно запускать с помощью различных триггеров, в том числе по изменению кода в git;
-- запуск сборки по кнопке с указанием параметров - GitLab CI/CD pipelines можно запускать вручную с указанием переменных;
-- возможность привязать настройки к каждой сборке - GitLab CI/CD variables - разновидность переменных окружения, их можно задавать не только для каждой сборки, 
-но и для всего репозитория, группы репозиториев и даже всего инстанса GitLab, переменные можно использовать как на стороне GitLab, так и на стороне агентов 
-сборки (GitLab Runner);
-- возможность создания шаблонов для различных конфигураций сборок - имеется в виде job templates, обладают свойствами обобщенности (не содержат конкретных данных),
-импортируемости (можно использовать во множестве конфигураций) и настраиваемости (за счет использования переменных);
-- возможность безопасного хранения секретных данных (пароли, ключи доступа) - GitLab позволяет хранить секретные данные как внутри, так и во внешних сервисах, 
-например HashiCorp Vault;
-- несколько конфигураций для сборки из одного репозитория - поддерживается, можно указать произвольный конфигурационный файл при запуске pipeline;
-- кастомные шаги при сборке - GitLab позволяет задавать и произвольно настраивать шаги (stages) в pipeline;
-- собственные докер-образы для сборки проектов - GitLab Container Registry позволяет хранить собственные образы и собирать их них проекты;
-- возможность развернуть агентов сборки на собственных серверах - GitLab Runner - приложение, которое можно установить на собственные серверы 
-и которое будет запускать сборку проекта в соответствии с CI/CD pipeline;
-- возможность параллельного запуска нескольких сборок - поддерживается;
-- возможность параллельного запуска тестов - поддерживается.
+```console
+user@host:~$ kubectl apply -f Netology/DEVOPS-22/devops-netology/12-kuber/2-baseobj/task1.yml 
+pod/hello-world created
 
-## Задача 2: Логи
+user@host:~$ kubectl get pods
+NAME          READY   STATUS    RESTARTS   AGE
+hello-world   1/1     Running   0          3s
 
-Для сбора логов предлагаю использовать [OpenSearch](https://opensearch.org/) (более свободный и доступный аналог ELK стека)
+user@host:~$ kubectl port-forward pod/hello-world 8080:8080
 
-Проект OpenSearch управляется сообществом и лицензируется под Apache 2.0.
-Как и ELK, OpenSearch содержит в себе index-based хранилище данных с возможностями поиска на основе библиотеки Apache Lucene,
-компонент OpenSearch Dashboards для визуализации запросов к хранилищу, а также DataPrepper - компонент сбора данных с возможностью 
-фильтрации, преобразования, нормализации и агрегирования данных
+user@host:~$ curl localhost:8080
 
-Таким образом, все условия задачи выполняются:
-- сбор логов в центральное хранилище со всех хостов, обслуживающих систему - через DataPrepper собираются данные (логи) и отправляются в 
-центральное хранилище OpenSearch, можно также использовать более традиционный Logstash;
-- минимальные требования к приложениям, сбор логов из stdout - OpenSearch поддерживает те же агенты (beats), что и ELK стек, они легковесны и могут 
-быть настроены на чтение stdout приложений через стандартные pipeline ОС;
-- гарантированная доставка логов до центрального хранилища - агенты (beats) гарантируют доставку как минимум единожды без потери данных, это достигается
-путем использования реестра, в котором хранятся статусы событий, которые передает агент;
-- обеспечение поиска и фильтрации по записям логов - за это отвечает компонент OpenSearch Dashboards, его функционал в целом повторяет функционал Kibana;
-- обеспечение пользовательского интерфейса с возможностью предоставления доступа разработчикам для поиска по записям логов - за это также отвечает компонент
- OpenSearch Dashboards;
-- возможность дать ссылку на сохранённый поиск по записям логов - как и Kibana, OpenSearch Dashboards позволяет сохранять запросы и экспортировать 
-их в различные форматы (plain text, JSON, CSV)
 
-## Задача 3: Мониторинг
+Hostname: hello-world
 
-Для мониторинга подойдет стандартная связка Prometheus/Grafana.
+Pod Information:
+        -no pod information available-
 
-Работает она следующим образом:
-- Экспортеры собирают данные с хостов и возвращают их в виде набора метрик. 
-- Prometheus получает метрики от экспортеров и сохраняет их в БД временных рядов
-- Grafana отвечает за визуализацию и анализ информации
+Server values:
+        server_version=nginx: 1.12.2 - lua: 10010
 
-Связка Prometheus/Grafana обеспечивает:
-- сбор метрик со всех хостов, обслуживающих систему;
-- сбор метрик состояния ресурсов хостов: CPU, RAM, HDD, Network;
-- сбор метрик потребляемых ресурсов для каждого сервиса: CPU, RAM, HDD, Network;
-- сбор метрик, специфичных для каждого сервиса;
-- пользовательский интерфейс с возможностью делать запросы и агрегировать информацию - за это отвечает Grafana;
-- пользовательский интерфейс с возможностью настраивать различные панели для отслеживания состояния системы - Grafana позволяет 
-создавать dashboards с произвольным набором отображаемых данных.
+Request Information:
+        client_address=127.0.0.1
+        method=GET
+        real path=/
+        query=
+        request_version=1.1
+        request_scheme=http
+        request_uri=http://localhost:8080/
+
+Request Headers:
+        accept=*/*  
+        host=localhost:8080  
+        user-agent=curl/7.74.0  
+
+Request Body:
+        -no body in request-
+
+```
+
+![Pic.1](12-kuber/2-baseobj/pics/task1.png "Pic. 1")
+
+## Задание 2. Создать Service и подключить его к Pod
+
+[Манифест Task2.yml](12-kuber/2-baseobj/task2.yml)
+
+```console
+user@host:~$ kubectl apply -f Netology/DEVOPS-22/devops-netology/12-kuber/2-baseobj/task2.yml 
+pod/netology-web created
+service/netology-svc created
+
+user@host:~$ kubectl get pods
+NAME           READY   STATUS    RESTARTS   AGE
+hello-world    1/1     Running   0          13m
+netology-web   1/1     Running   0          9s
+
+user@host:~$ kubectl get svc
+NAME           TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+kubernetes     ClusterIP   10.152.183.1    <none>        443/TCP    28m
+netology-svc   ClusterIP   10.152.183.77   <none>        8888/TCP   13s
+
+user@host:~$ kubectl describe svc/netology-svc
+Name:              netology-svc
+Namespace:         default
+Labels:            <none>
+Annotations:       <none>
+Selector:          app=netology-web
+Type:              ClusterIP
+IP Family Policy:  SingleStack
+IP Families:       IPv4
+IP:                10.152.183.77
+IPs:               10.152.183.77
+Port:              netology-web-port  8888/TCP
+TargetPort:        8080/TCP
+Endpoints:         10.1.128.206:8080
+Session Affinity:  None
+Events:            <none>
+
+user@host:~$ kubectl port-forward svc/netology-svc 8888:8888
+
+user@host:~$ curl localhost:8888
+
+
+Hostname: netology-web
+
+Pod Information:
+        -no pod information available-
+
+Server values:
+        server_version=nginx: 1.12.2 - lua: 10010
+
+Request Information:
+        client_address=127.0.0.1
+        method=GET
+        real path=/
+        query=
+        request_version=1.1
+        request_scheme=http
+        request_uri=http://localhost:8080/
+
+Request Headers:
+        accept=*/*  
+        host=localhost:8888  
+        user-agent=curl/7.74.0  
+
+Request Body:
+        -no body in request-
+
+
+```
+
+![Pic.2](12-kuber/2-baseobj/pics/task2.png "Pic. 2")
