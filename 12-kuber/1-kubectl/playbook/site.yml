@@ -2,7 +2,7 @@
 - name: Install microk8s
   hosts: microk8s
   handlers:
-    - name: Pause before regenerate certs
+    - name: Pause
       ansible.builtin.pause:
         seconds: 15
     - name: Regenerate certs
@@ -30,15 +30,18 @@
         groups: microk8s
     - name: Enable microk8s dashboard
       become: true
-      ansible.builtin.shell: microk8s enable dashboard         
+      ansible.builtin.shell: microk8s enable dashboard
+      notify: 
+        - Pause       
+    - name: Flush handlers
+      meta: flush_handlers                
     - name: Append external IP to csr.conf.template
       ansible.builtin.lineinfile:
         path: /var/snap/microk8s/current/certs/csr.conf.template
         insertafter: '^IP.1'
         line: 'IP.2 = {{ ansible_host }}'
       notify: 
-        - Pause before regenerate certs
+        - Pause
         - Regenerate certs
-
-    # - name: Flush handlers
-    #   meta: flush_handlers
+    - name: Flush handlers
+      meta: flush_handlers
