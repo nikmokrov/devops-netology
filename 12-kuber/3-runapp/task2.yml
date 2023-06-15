@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-with-init-deployment
+  labels:
+    app: nginx-with-init
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-with-init
+  template:
+    metadata:
+      labels:
+        app: nginx-with-init
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        imagePullPolicy: IfNotPresent
+      initContainers:
+      - name: init-nginx
+        image: busybox
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', "until nslookup nginx-with-init-svc.default.svc.cluster.local; do echo waiting for service nginx-with-init-svc; sleep 2; done"]
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-with-init-svc
+spec:
+  ports:
+  - name: nginx-port
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: nginx-with-init
