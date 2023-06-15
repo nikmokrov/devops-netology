@@ -30,11 +30,13 @@
         groups: microk8s
     - name: Enable microk8s dashboard
       become: true
-      ansible.builtin.shell: microk8s enable dashboard
+      ansible.builtin.shell: microk8s enable dashboard              
+    - name: List certs dir
+      ansible.builtin.shell: ls /var/snap/microk8s/current/certs
       notify: 
         - Pause       
     - name: Flush handlers
-      meta: flush_handlers                
+      meta: flush_handlers        
     - name: Append external IP to csr.conf.template
       ansible.builtin.lineinfile:
         path: /var/snap/microk8s/current/certs/csr.conf.template
