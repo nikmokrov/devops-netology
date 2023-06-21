@@ -1,90 +1,32 @@
-# Домашнее задание к занятию «Запуск приложений в K8S»
+# Домашнее задание к занятию «Сетевое взаимодействие в K8S. Часть 1»
 
-## Задание 1. Создать Deployment и обеспечить доступ к репликам приложения из другого Pod
+## Задание 1. Создать Deployment и обеспечить доступ к контейнерам приложения по разным портам из другого Pod внутри кластера
 
-[Манифест Task1.yml](12-kuber/3-runapp/task1.yml)
+[Манифест Task1.yml](12-kuber/4-kuber_net1/task1.yml)
 
 1.
 ```console
-user@host:~$ kubectl apply -f Netology/DEVOPS-22/devops-netology/12-kuber/3-runapp/task1.yml 
+user@host:~$ kubectl apply -f Netology/DEVOPS-22/devops-netology/12-kuber/4-kuber_net1/task1.yml 
 deployment.apps/nginx-and-multitool-deployment created
-
-user@host:~$ kubectl get pods
-NAME                                              READY   STATUS   RESTARTS      AGE
-nginx-and-multitool-deployment-849bc75b88-n56pd   1/2     Error    1 (15s ago)   19s
-
-user@host:~$ kubectl logs nginx-and-multitool-deployment-849bc75b88-n56pd -c multitool
-The directory /usr/share/nginx/html is not mounted.
-Therefore, over-writing the default index.html file with some useful information:
-WBITT Network MultiTool (with NGINX) - nginx-and-multitool-deployment-849bc75b88-n56pd - 10.1.128.207 - HTTP: 80 , HTTPS: 443 . (Formerly praqma/network-multitool)
-2023/06/15 11:33:08 [emerg] 1#1: bind() to 0.0.0.0:80 failed (98: Address in use)
-nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address in use)
-2023/06/15 11:33:08 [emerg] 1#1: bind() to 0.0.0.0:80 failed (98: Address in use)
-nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address in use)
-2023/06/15 11:33:08 [emerg] 1#1: bind() to 0.0.0.0:80 failed (98: Address in use)
-nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address in use)
-2023/06/15 11:33:08 [emerg] 1#1: bind() to 0.0.0.0:80 failed (98: Address in use)
-nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address in use)
-2023/06/15 11:33:08 [emerg] 1#1: bind() to 0.0.0.0:80 failed (98: Address in use)
-nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address in use)
-2023/06/15 11:33:08 [emerg] 1#1: still could not bind()
-nginx: [emerg] still could not bind()
-```
-
-nginx и multitool по-умолчанию используют 80-й порт. nginx стартует первым, поэтому к моменту запуска multitool 80-й порт уже занят, что и видно по логам контейнера. Решение - запустить multitool на другом порту, передав его через переменную окружения HTTP_PORT
-
-```console
-user@host:~$ kubectl apply -f Netology/DEVOPS-22/devops-netology/12-kuber/3-runapp/task1.yml 
-deployment.apps/nginx-and-multitool-deployment configured
-
-user@host:~$ kubectl get pods
-NAME                                              READY   STATUS    RESTARTS   AGE
-nginx-and-multitool-deployment-5d58f84bbd-fvrls   2/2     Running   0          13s
-
-```
-2. Увеличиваем кол-во replicas до 2
-
-3.
-```console
-user@host:~$ kubectl apply -f Netology/DEVOPS-22/devops-netology/12-kuber/3-runapp/task1.yml 
-deployment.apps/nginx-and-multitool-deployment configured
-
-user@host:~$ kubectl get pods
-NAME                                              READY   STATUS    RESTARTS   AGE
-nginx-and-multitool-deployment-5d58f84bbd-fvrls   2/2     Running   0          82s
-nginx-and-multitool-deployment-5d58f84bbd-snvf5   2/2     Running   0          5s
-
-```
-
-4.
-```console
-user@host:~$ kubectl apply -f Netology/DEVOPS-22/devops-netology/12-kuber/3-runapp/task1.yml 
-deployment.apps/nginx-and-multitool-deployment unchanged
 service/multitool-svc created
+pod/standalone-multitool created
+
+user@host:~$ kubectl get pods
+NAME                                             READY   STATUS              RESTARTS   AGE
+nginx-and-multitool-deployment-8b5b7df68-2kldc   0/2     ContainerCreating   0          12s
+nginx-and-multitool-deployment-8b5b7df68-h2rq8   0/2     ContainerCreating   0          12s
+nginx-and-multitool-deployment-8b5b7df68-8vcns   0/2     ContainerCreating   0          12s
+standalone-multitool                             0/1     ContainerCreating   0          12s
 
 user@host:~$ kubectl get svc
-NAME            TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)           AGE
-kubernetes      ClusterIP   10.152.183.1     <none>        443/TCP           59m
-multitool-svc   ClusterIP   10.152.183.188   <none>        80/TCP,8888/TCP   30s
-```
+NAME            TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)             AGE
+kubernetes      ClusterIP   10.152.183.1     <none>        443/TCP             13m
+multitool-svc   ClusterIP   10.152.183.242   <none>        9001/TCP,9002/TCP   16s
 
-5.
-```console
-user@host:~$ kubectl apply -f Netology/DEVOPS-22/devops-netology/12-kuber/3-runapp/task1.yml 
-deployment.apps/nginx-and-multitool-deployment unchanged
-service/multitool-svc unchanged
-pod/another-one-multitool created
-
-user@host:~$ kubectl get pod
-NAME                                              READY   STATUS    RESTARTS   AGE
-nginx-and-multitool-deployment-5d58f84bbd-fvrls   2/2     Running   0          8m34s
-nginx-and-multitool-deployment-5d58f84bbd-snvf5   2/2     Running   0          7m17s
-another-one-multitool                             1/1     Running   0          86s
-
-user@host:~$ kubectl exec pod/another-one-multitool -it bash
-kubectl exec [POD] [COMMAND] is DEPRECATED and will be removed in a future version. Use kubectl exec [POD] -- [COMMAND] instead.
-
-bash-5.1# curl http://multitool-svc:80
+user@host:~$ kubectl exec pod/standalone-multitool -- curl http://multitool-svc:9001
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   615  100   615    0     0   392k      0 --:--:-- --:--:-- --:--:--  600k
 <!DOCTYPE html>
 <html>
 <head>
@@ -109,39 +51,58 @@ Commercial support is available at
 </body>
 </html>
 
-bash-5.1# curl http://multitool-svc:8888
-WBITT Network MultiTool (with NGINX) - nginx-and-multitool-deployment-5d58f84bbd-fvrls - 10.1.128.208 - HTTP: 8888 , HTTPS: 443 . (Formerly praqma/network-multitool)
-
+user@host:~$ kubectl exec pod/standalone-multitool -- curl http://multitool-svc:9002
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   165  100   165    0     0  62571      0 --:--:-- --:--:-- --:--:-- 82500
+WBITT Network MultiTool (with NGINX) - nginx-and-multitool-deployment-8b5b7df68-8vcns - 10.1.128.205 - HTTP: 8080 , HTTPS: 443 . (Formerly praqma/network-multitool)
 
 ```
 
-## Задание 2. Создать Deployment и обеспечить старт основного контейнера при выполнении условий
+## Задание 2. Создать Service и обеспечить доступ к приложениям снаружи кластера
 
-[Манифест Task2.yml](12-kuber/3-runapp/task2.yml)
+[Манифест Task2.yml](12-kuber/4-kuber_net1/task2.yml)
 
 ```console
-user@host:~$ kubectl apply -f Netology/DEVOPS-22/devops-netology/12-kuber/3-runapp/task2.yml 
-deployment.apps/nginx-with-init-deployment created
-
-user@host:~$ kubectl get pod
-NAME                                          READY   STATUS     RESTARTS   AGE
-nginx-with-init-deployment-567977478b-qtxcp   0/1     Init:0/1   0          2s
+user@host:~$ kubectl apply -f Netology/DEVOPS-22/devops-netology/12-kuber/4-kuber_net1/task2.yml 
+service/nodeport-svc created
 
 user@host:~$ kubectl get svc
-NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
-kubernetes   ClusterIP   10.152.183.1   <none>        443/TCP   101m
+NAME            TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)             AGE
+kubernetes      ClusterIP   10.152.183.1     <none>        443/TCP             50m
+multitool-svc   ClusterIP   10.152.183.242   <none>        9001/TCP,9002/TCP   36m
+nodeport-svc    NodePort    10.152.183.69    <none>        80:30001/TCP        2s
 
-user@host:~$ kubectl apply -f Netology/DEVOPS-22/devops-netology/12-kuber/3-runapp/task2.yml 
-deployment.apps/nginx-with-init-deployment unchanged
-service/nginx-with-init-svc created
+user@host:~$ kubectl get ep
+NAME            ENDPOINTS                                                           AGE
+kubernetes      10.129.0.24:16443                                                   50m
+multitool-svc   10.1.128.203:8080,10.1.128.204:8080,10.1.128.205:8080 + 3 more...   37m
+nodeport-svc    10.1.128.203:80,10.1.128.204:80,10.1.128.205:80                     5s
 
-user@host:~$ kubectl get svc
-NAME                  TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)   AGE
-kubernetes            ClusterIP   10.152.183.1     <none>        443/TCP   101m
-nginx-with-init-svc   ClusterIP   10.152.183.187   <none>        80/TCP    4s
+ubuntu@microk8s:~$ curl http://10.129.0.24:30001
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+html { color-scheme: light dark; }
+body { width: 35em; margin: 0 auto;
+font-family: Tahoma, Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
 
-user@host:~$ kubectl get pod
-NAME                                          READY   STATUS    RESTARTS   AGE
-nginx-with-init-deployment-567977478b-qtxcp   1/1     Running   0          23s
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href="http://nginx.com/">nginx.com</a>.</p>
+
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
+
 
 ```
