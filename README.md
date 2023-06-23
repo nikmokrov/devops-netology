@@ -1,32 +1,42 @@
-# Домашнее задание к занятию «Сетевое взаимодействие в K8S. Часть 1»
+# Домашнее задание к занятию «Сетевое взаимодействие в K8S. Часть 2»
 
-## Задание 1. Создать Deployment и обеспечить доступ к контейнерам приложения по разным портам из другого Pod внутри кластера
+## Задание 1. Создать Deployment приложений backend и frontend
 
-[Манифест Task1.yml](12-kuber/4-kuber_net1/task1.yml)
+[Манифест Task1.yml](12-kuber/5-kuber_net2/task1.yml)
 
 1.
 ```console
-user@host:~$ kubectl apply -f Netology/DEVOPS-22/devops-netology/12-kuber/4-kuber_net1/task1.yml 
-deployment.apps/nginx-and-multitool-deployment created
-service/multitool-svc created
-pod/standalone-multitool created
+user@host:~$ kubectl apply -f Netology/DEVOPS-22/devops-netology/12-kuber/5-kuber_net2/task1.yml 
+deployment.apps/frontend-deployment created
+deployment.apps/backend-deployment created
+service/frontend-svc created
+service/backend-svc created
 
 user@host:~$ kubectl get pods
-NAME                                             READY   STATUS              RESTARTS   AGE
-nginx-and-multitool-deployment-8b5b7df68-2kldc   0/2     ContainerCreating   0          12s
-nginx-and-multitool-deployment-8b5b7df68-h2rq8   0/2     ContainerCreating   0          12s
-nginx-and-multitool-deployment-8b5b7df68-8vcns   0/2     ContainerCreating   0          12s
-standalone-multitool                             0/1     ContainerCreating   0          12s
+NAME                                  READY   STATUS              RESTARTS   AGE
+frontend-deployment-bb967c945-vzs9g   0/1     ContainerCreating   0          12s
+frontend-deployment-bb967c945-zn7c9   0/1     ContainerCreating   0          12s
+frontend-deployment-bb967c945-245jj   0/1     ContainerCreating   0          12s
+backend-deployment-58979d9689-gjk5g   0/1     ContainerCreating   0          12s
+backend-deployment-58979d9689-cfs7d   0/1     ContainerCreating   0          11s
+backend-deployment-58979d9689-5dkbv   0/1     ContainerCreating   0          11s
 
 user@host:~$ kubectl get svc
-NAME            TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)             AGE
-kubernetes      ClusterIP   10.152.183.1     <none>        443/TCP             13m
-multitool-svc   ClusterIP   10.152.183.242   <none>        9001/TCP,9002/TCP   16s
+NAME           TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)   AGE
+kubernetes     ClusterIP   10.152.183.1     <none>        443/TCP   10m
+frontend-svc   ClusterIP   10.152.183.210   <none>        80/TCP    15s
+backend-svc    ClusterIP   10.152.183.105   <none>        80/TCP    14s
 
-user@host:~$ kubectl exec pod/standalone-multitool -- curl http://multitool-svc:9001
+user@host:~$ kubectl exec pod/frontend-deployment-bb967c945-vzs9g -- curl http://backend-svc
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-100   615  100   615    0     0   392k      0 --:--:-- --:--:-- --:--:--  600k
+100   152  100   152    0     0  39800      0 --:--:-- --:--:-- --:--:-- 50666
+WBITT Network MultiTool (with NGINX) - backend-deployment-58979d9689-5dkbv - 10.1.128.208 - HTTP: 80 , HTTPS: 443 . (Formerly praqma/network-multitool)
+
+user@host:~$ kubectl exec pod/backend-deployment-58979d9689-gjk5g -- curl http://frontend-svc
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   615  100   615    0     0   202k      0 --:--:-- --:--:-- --:--:--  300k
 <!DOCTYPE html>
 <html>
 <head>
@@ -50,36 +60,28 @@ Commercial support is available at
 <p><em>Thank you for using nginx.</em></p>
 </body>
 </html>
-
-user@host:~$ kubectl exec pod/standalone-multitool -- curl http://multitool-svc:9002
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100   165  100   165    0     0  62571      0 --:--:-- --:--:-- --:--:-- 82500
-WBITT Network MultiTool (with NGINX) - nginx-and-multitool-deployment-8b5b7df68-8vcns - 10.1.128.205 - HTTP: 8080 , HTTPS: 443 . (Formerly praqma/network-multitool)
 
 ```
 
-## Задание 2. Создать Service и обеспечить доступ к приложениям снаружи кластера
+## Задание 2. Создать Ingress и обеспечить доступ к приложениям снаружи кластера
 
-[Манифест Task2.yml](12-kuber/4-kuber_net1/task2.yml)
+[Манифест Task2.yml](12-kuber/5-kuber_net2/task2.yml)
 
 ```console
-user@host:~$ kubectl apply -f Netology/DEVOPS-22/devops-netology/12-kuber/4-kuber_net1/task2.yml 
-service/nodeport-svc created
+user@host:~$ kubectl apply -f Netology/DEVOPS-22/devops-netology/12-kuber/5-kuber_net2/task2.yml
+ingress.networking.k8s.io/task2-ingress created
 
-user@host:~$ kubectl get svc
-NAME            TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)             AGE
-kubernetes      ClusterIP   10.152.183.1     <none>        443/TCP             50m
-multitool-svc   ClusterIP   10.152.183.242   <none>        9001/TCP,9002/TCP   36m
-nodeport-svc    NodePort    10.152.183.69    <none>        80:30001/TCP        2s
+user@host:~$ kubectl get ingress
+NAME            CLASS    HOSTS   ADDRESS     PORTS   AGE
+task2-ingress   public   *       127.0.0.1   80      6m31s
 
 user@host:~$ kubectl get ep
-NAME            ENDPOINTS                                                           AGE
-kubernetes      10.129.0.24:16443                                                   50m
-multitool-svc   10.1.128.203:8080,10.1.128.204:8080,10.1.128.205:8080 + 3 more...   37m
-nodeport-svc    10.1.128.203:80,10.1.128.204:80,10.1.128.205:80                     5s
+NAME           ENDPOINTS                                         AGE
+kubernetes     10.129.0.20:16443                                 35m
+frontend-svc   10.1.128.203:80,10.1.128.204:80,10.1.128.205:80   25m
+backend-svc    10.1.128.206:80,10.1.128.207:80,10.1.128.208:80   25m
 
-ubuntu@microk8s:~$ curl http://10.129.0.24:30001
+ubuntu@microk8s:~$ curl http://10.129.0.20/
 <!DOCTYPE html>
 <html>
 <head>
@@ -104,5 +106,7 @@ Commercial support is available at
 </body>
 </html>
 
+ubuntu@microk8s:~$ curl http://10.129.0.20/api
+WBITT Network MultiTool (with NGINX) - backend-deployment-58979d9689-cfs7d - 10.1.128.207 - HTTP: 80 , HTTPS: 443 . (Formerly praqma/network-multitool)
 
 ```
