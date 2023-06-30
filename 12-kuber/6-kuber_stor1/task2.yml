@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: syslog-from-pod-daemonset
+  labels:
+    app: syslog-from-pod
+spec:
+  selector:
+    matchLabels:
+      app: syslog-from-pod
+  template:
+    metadata:
+      labels:
+        app: syslog-from-pod
+    spec:
+      containers:
+      - name: multitool
+        image: wbitt/network-multitool
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: syslog-vol
+          mountPath: /input
+      volumes:
+      - name: syslog-vol
+        hostPath: 
+          path: /var/log
