@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pv-on-nfs-deployment
+  labels:
+    app: nfs-volume
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nfs-volume
+  template:
+    metadata:
+      labels:
+        app: nfs-volume
+    spec:
+      containers:
+      - name: multitool
+        image: wbitt/network-multitool
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: pv-on-nfs
+          mountPath: /pv-on-nfs
+      volumes:
+      - name: pv-on-nfs
+        persistentVolumeClaim:
+          claimName: pv-on-nfs-claim
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pv-on-nfs-claim
+spec:
+  storageClassName: nfs-csi
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi

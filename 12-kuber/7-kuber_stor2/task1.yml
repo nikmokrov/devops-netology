@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pv-deployment
+  labels:
+    app: persistent-volume
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: persistent-volume
+  template:
+    metadata:
+      labels:
+        app: persistent-volume
+    spec:
+      containers:
+      - name: busybox
+        image: busybox
+        command: ['sh', '-c', 'while true; do echo $(date +"%F %T") to stamp.txt >> /output/stamp.txt; sleep 5; done']
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: persist-vol
+          mountPath: /output
+      - name: multitool
+        image: wbitt/network-multitool
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: persist-vol
+          mountPath: /input
+      volumes:
+      - name: persist-vol
+        persistentVolumeClaim:
+          claimName: persist-vol-claim
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: persist-vol
+spec:
+  capacity:
+    storage: 100Mi
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem  
+  persistentVolumeReclaimPolicy: Retain  
+  local:
+    path: /srv/persist-vol
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - microk8s
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: persist-vol-claim
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
