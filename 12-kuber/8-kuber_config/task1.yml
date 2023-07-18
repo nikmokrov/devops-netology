@@ -1,0 +1,86 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: multitool-port-configmap
+data:
+  http_port: "8888"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-index-configmap
+data:
+  index.html:  |
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <title>DEVOPS-22 nginx sample page</title>
+      </head>
+      <body>
+        <h1>DEVOPS-22 nginx sample page for k8s ConfigMap lesson</h1>
+      </body>
+    </html>
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-configmap-deployment
+  labels:
+    app: nginx-configmap
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-configmap
+  template:
+    metadata:
+      labels:
+        app: nginx-configmap
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: index-volume
+          mountPath: /usr/share/nginx/html
+      - name: multitool
+        image: wbitt/network-multitool
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: HTTP_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: multitool-port-configmap
+                key: http_port
+      volumes:
+      - name: index-volume
+        configMap:
+          name: nginx-index-configmap
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-svc
+spec:
+  ports:
+  - name: nginx-port
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: nginx-configmap
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: external-multitool
+spec:
+  containers:
+  - image: wbitt/network-multitool
+    imagePullPolicy: IfNotPresent
+    name: external-multitool
