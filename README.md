@@ -1,105 +1,121 @@
-# Домашнее задание к занятию «Конфигурация приложений»
+# Домашнее задание к занятию «Управление доступом»
 
-## Задание 1. Создать Deployment приложения и решить возникшую проблему с помощью ConfigMap. Добавить веб-страницу
+## Задание 1. Создайте конфигурацию для подключения пользователя
 
-[Манифест Task1.yml](12-kuber/8-kuber_config/task1.yml)
+[Манифест csr.yml](12-kuber/9-kuber_rbac/csr.yml)
 
-```console
-user@host:~$ kubectl apply -f Netology/DEVOPS-22/devops-netology/12-kuber/8-kuber_config/task1.yml
-configmap/multitool-port-configmap created
-configmap/nginx-index-configmap created
-deployment.apps/nginx-configmap-deployment created
-service/nginx-svc created
-pod/external-multitool created
-
-user@host:~$ kubectl get pods
-NAME                                          READY   STATUS    RESTARTS   AGE
-nginx-configmap-deployment-795c45d684-zk9fh   2/2     Running   0          8s
-external-multitool                            1/1     Running   0          8s
-
-user@host:~$ kubectl get configmaps
-NAME                       DATA   AGE
-kube-root-ca.crt           1      29m
-multitool-port-configmap   1      17s
-nginx-index-configmap      1      17s
-
-user@host:~$ kubectl get svc
-NAME         TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)   AGE
-kubernetes   ClusterIP   10.152.183.1     <none>        443/TCP   29m
-nginx-svc    ClusterIP   10.152.183.166   <none>        80/TCP    28s
-
-user@host:~$ kubectl exec external-multitool -- curl http://nginx-svc
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100   192  100   192    0     0   114k      0 --:--:-- --:--:-- --:--:--  187k
-<!doctype html>
-<html lang="en">
-  <head>
-    <title>DEVOPS-22 nginx sample page</title>
-  </head>
-  <body>
-    <h1>DEVOPS-22 nginx sample page for k8s ConfigMap lesson</h1>
-  </body>
-</html>
-
-
-```
-
-
-## Задание 2. Создать приложение с вашей веб-страницей, доступной по HTTPS
-
-[Манифест Task2.yml](12-kuber/8-kuber_config/task2.yml)
+[Манифест Task1.yml](12-kuber/9-kuber_rbac/task1.yml)
 
 ```console
-user@host:~$ kubectl apply -f Netology/DEVOPS-22/devops-netology/12-kuber/8-kuber_config/task2.yml
-configmap/nginx-index-configmap created
-secret/nginx-tls-secret created
-deployment.apps/nginx-configmap-deployment created
-service/nginx-svc created
-ingress.networking.k8s.io/nginx-ingress created
+user@host:~$ openssl genrsa -out devops22.key 2048
+Generating RSA private key, 2048 bit long modulus (2 primes)
+.......................................+++++
+.+++++
+e is 65537 (0x010001)
 
-user@host:~$ kubectl get pods
-NAME                                          READY   STATUS    RESTARTS   AGE
-nginx-configmap-deployment-6d969dc844-cdgbr   1/1     Running   0          8s
+user@host:~$ openssl req -new -key devops22.key -out devops22.csr -subj "/CN=devops22"
 
-user@host:~$ kubectl get svc
-NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
-kubernetes   ClusterIP   10.152.183.1    <none>        443/TCP   21m
-nginx-svc    ClusterIP   10.152.183.37   <none>        80/TCP    13s
+user@host:~$ kubectl apply -f Netology/DEVOPS-22/devops-netology/12-kuber/9-kuber_rbac/csr.yml 
+certificatesigningrequest.certificates.k8s.io/devops22 created
 
-user@host:~$ kubectl get ingress
-NAME            CLASS    HOSTS   ADDRESS   PORTS     AGE
-nginx-ingress   public   *                 80, 443   15s
+user@host:~$ kubectl get csr
+NAME       AGE   SIGNERNAME                            REQUESTOR   REQUESTEDDURATION   CONDITION
+devops22   18s   kubernetes.io/kube-apiserver-client   admin       10d                 Pending
 
-user@host:~$ kubectl get configmap
-NAME                    DATA   AGE
-kube-root-ca.crt        1      22m
-nginx-index-configmap   1      23s
+user@host:~$ kubectl certificate approve devops22
+certificatesigningrequest.certificates.k8s.io/devops22 approved
 
-user@host:~$ kubectl get secret
-NAME               TYPE   DATA   AGE
-nginx-tls-secret   tls    2      28s
+user@host:~$ kubectl get csr
+NAME       AGE   SIGNERNAME                            REQUESTOR   REQUESTEDDURATION   CONDITION
+devops22   61s   kubernetes.io/kube-apiserver-client   admin       10d                 Approved,Issued
 
-ubuntu@microk8s:~$ curl -k https://localhost
-<!doctype html>
-<html lang="en">
-  <head>
-    <title>DEVOPS-22 nginx sample page</title>
-  </head>
-  <body>
-    <h1>DEVOPS-22 nginx sample page for k8s ConfigMap lesson</h1>
-  </body>
-</html>
+user@host:~$ kubectl get csr devops22 -o jsonpath='{.status.certificate}'| base64 -d > devops22.crt
 
-ubuntu@microk8s:~$ curl -k https://10.129.0.30
-<!doctype html>
-<html lang="en">
-  <head>
-    <title>DEVOPS-22 nginx sample page</title>
-  </head>
-  <body>
-    <h1>DEVOPS-22 nginx sample page for k8s ConfigMap lesson</h1>
-  </body>
-</html>
+user@host:~$ ls -l devops22*
+-rw-r--r-- 1 user user 1094 июл 23 16:09 devops22.crt
+-rw-r--r-- 1 user user  891 июл 23 15:52 devops22.csr
+-rw------- 1 user user 1679 июл 23 15:51 devops22.key
+
+user@host:~$ kubectl create ns devops22
+namespace/devops22 created
+
+user@host:~$ kubectl apply -f Netology/DEVOPS-22/devops-netology/12-kuber/9-kuber_rbac/task1.yml 
+role.rbac.authorization.k8s.io/devops22 created
+rolebinding.rbac.authorization.k8s.io/devops22 created
+
+user@host:~$ kubectl get roles
+NAME       CREATED AT
+devops22   2023-07-23T13:19:03Z
+
+user@host:~$ kubectl get rolebindings
+NAME       ROLE            AGE
+devops22   Role/devops22   19s
+
+user@host:~$ kubectl describe role/devops22
+Name:         devops22
+Labels:       <none>
+Annotations:  <none>
+PolicyRule:
+  Resources  Non-Resource URLs  Resource Names  Verbs
+  ---------  -----------------  --------------  -----
+  pods/log   []                 []              [get watch list]
+  pods       []                 []              [get watch list]
+
+user@host:~$ kubectl config set-credentials devops22 --client-key=devops22.key --client-certificate=devops22.crt --embed-certs=true
+User "devops22" set.
+
+user@host:~$ kubectl config set-context devops22 --cluster=microk8s-cluster --user=devops22
+Context "devops22" created.
+
+user@host:~$ kubectl config get-contexts
+CURRENT   NAME       CLUSTER            AUTHINFO   NAMESPACE
+*         devops22   microk8s-cluster   devops22   
+          microk8s   microk8s-cluster   admin      
+
+user@host:~$ kubectl config use-context devops22
+Switched to context "devops22".
+
+user@host:~$ kubectl config view
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: DATA+OMITTED
+    server: https://130.193.54.9:16443
+  name: microk8s-cluster
+contexts:
+- context:
+    cluster: microk8s-cluster
+    user: devops22
+  name: devops22
+- context:
+    cluster: microk8s-cluster
+    user: admin
+  name: microk8s
+current-context: devops22
+kind: Config
+preferences: {}
+users:
+- name: admin
+  user:
+    token: REDACTED
+- name: devops22
+  user:
+    client-certificate-data: DATA+OMITTED
+    client-key-data: DATA+OMITTED
+
+user@host:~$ kubectl auth can-i list pods -n devops22
+yes
+
+user@host:~$ kubectl auth can-i list pods/logs -n devops22
+yes
+
+user@host:~$ kubectl auth can-i create pods -n devops22
+no
+
+user@host:~$ kubectl auth can-i create ingress -n devops22
+no
+
+user@host:~$ kubectl auth can-i list ingress -n devops22
+no
 
 ```
