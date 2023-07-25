@@ -1,121 +1,121 @@
-# Домашнее задание к занятию «Управление доступом»
+# Домашнее задание к занятию «Helm»
 
-## Задание 1. Создайте конфигурацию для подключения пользователя
+## Задание 1. Подготовить Helm-чарт для приложения
 
-[Манифест csr.yml](12-kuber/9-kuber_rbac/csr.yml)
+Чарт
 
-[Манифест Task1.yml](12-kuber/9-kuber_rbac/task1.yml)
+[Chart.yml](12-kuber/10-kuber_helm/devops22-chart/Chart.yaml)</br>
+[values.yml](12-kuber/10-kuber_helm/devops22-chart/values.yaml)</br>
+[deployment.yml](12-kuber/10-kuber_helm/devops22-chart/templates/deployment.yaml)</br>
+[service.yml](12-kuber/10-kuber_helm/devops22-chart/templates/service.yaml)</br>
+[ingress.yml](12-kuber/10-kuber_helm/devops22-chart/templates/ingress.yaml)</br>
 
 ```console
-user@host:~$ openssl genrsa -out devops22.key 2048
-Generating RSA private key, 2048 bit long modulus (2 primes)
-.......................................+++++
-.+++++
-e is 65537 (0x010001)
+user@host:~/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm$ helm create devops22-chart
+Creating devops22-chart
 
-user@host:~$ openssl req -new -key devops22.key -out devops22.csr -subj "/CN=devops22"
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ helm package ./
+Successfully packaged chart and saved it to: /home/user/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart/devops22-chart-0.1.0.tgz
 
-user@host:~$ kubectl apply -f Netology/DEVOPS-22/devops-netology/12-kuber/9-kuber_rbac/csr.yml 
-certificatesigningrequest.certificates.k8s.io/devops22 created
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ helm install deploy-1 devops22-chart-0.1.0.tgz 
+NAME: deploy-1
+LAST DEPLOYED: Tue Jul 25 11:35:42 2023
+NAMESPACE: default
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+Just installed deploy-1-devops22-chart-app
 
-user@host:~$ kubectl get csr
-NAME       AGE   SIGNERNAME                            REQUESTOR   REQUESTEDDURATION   CONDITION
-devops22   18s   kubernetes.io/kube-apiserver-client   admin       10d                 Pending
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ helm install deploy-2 --set image.tag="1.20.0" devops22-chart-0.1.0.tgz 
+NAME: deploy-2
+LAST DEPLOYED: Tue Jul 25 11:36:08 2023
+NAMESPACE: default
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+Just installed deploy-2-devops22-chart-app
 
-user@host:~$ kubectl certificate approve devops22
-certificatesigningrequest.certificates.k8s.io/devops22 approved
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ kubectl get pods
+NAME                                           READY   STATUS    RESTARTS   AGE
+deploy-1-devops22-chart-app-9ffcbd767-fvkb7    1/1     Running   0          50s
+deploy-2-devops22-chart-app-668bd668c5-s6mnw   1/1     Running   0          21s
 
-user@host:~$ kubectl get csr
-NAME       AGE   SIGNERNAME                            REQUESTOR   REQUESTEDDURATION   CONDITION
-devops22   61s   kubernetes.io/kube-apiserver-client   admin       10d                 Approved,Issued
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ kubectl exec deploy-1-devops22-chart-app-9ffcbd767-fvkb7 -- nginx -Vnginx version: nginx/1.19.0
+built by gcc 8.3.0 (Debian 8.3.0-6) 
+built with OpenSSL 1.1.1d  10 Sep 2019
 
-user@host:~$ kubectl get csr devops22 -o jsonpath='{.status.certificate}'| base64 -d > devops22.crt
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ kubectl exec deploy-2-devops22-chart-app-668bd668c5-s6mnw -- nginx -V
+nginx version: nginx/1.20.0
+built by gcc 8.3.0 (Debian 8.3.0-6) 
+built with OpenSSL 1.1.1d  10 Sep 2019
 
-user@host:~$ ls -l devops22*
--rw-r--r-- 1 user user 1094 июл 23 16:09 devops22.crt
--rw-r--r-- 1 user user  891 июл 23 15:52 devops22.csr
--rw------- 1 user user 1679 июл 23 15:51 devops22.key
+```
 
-user@host:~$ kubectl create ns devops22
-namespace/devops22 created
+## Задание 2. Запустить две версии в разных неймспейсах
 
-user@host:~$ kubectl apply -f Netology/DEVOPS-22/devops-netology/12-kuber/9-kuber_rbac/task1.yml 
-role.rbac.authorization.k8s.io/devops22 created
-rolebinding.rbac.authorization.k8s.io/devops22 created
+```console
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ helm install deploy-1 -n app1 --create-namespace devops22-chart-0.1.0.tgz NAME: deploy-1
+LAST DEPLOYED: Tue Jul 25 11:38:10 2023
+NAMESPACE: app1
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+Just installed deploy-1-devops22-chart-app
 
-user@host:~$ kubectl get roles
-NAME       CREATED AT
-devops22   2023-07-23T13:19:03Z
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ helm install deploy-2 -n app1 --create-namespace --set image.tag="1.20.0" devops22-chart-0.1.0.tgz 
+NAME: deploy-2
+LAST DEPLOYED: Tue Jul 25 11:38:32 2023
+NAMESPACE: app1
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+Just installed deploy-2-devops22-chart-app
 
-user@host:~$ kubectl get rolebindings
-NAME       ROLE            AGE
-devops22   Role/devops22   19s
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ helm install deploy-3 -n app2 --create-namespace --set image.tag="1.21.0" devops22-chart-0.1.0.tgz 
+NAME: deploy-3
+LAST DEPLOYED: Tue Jul 25 11:38:45 2023
+NAMESPACE: app2
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+Just installed deploy-3-devops22-chart-app
 
-user@host:~$ kubectl describe role/devops22
-Name:         devops22
-Labels:       <none>
-Annotations:  <none>
-PolicyRule:
-  Resources  Non-Resource URLs  Resource Names  Verbs
-  ---------  -----------------  --------------  -----
-  pods/log   []                 []              [get watch list]
-  pods       []                 []              [get watch list]
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ helm list -n app1
+NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                   APP VERSION
+deploy-1        app1            1               2023-07-25 11:38:10.344357198 +0300 MSK deployed        devops22-chart-0.1.0    1.19.0     
+deploy-2        app1            1               2023-07-25 11:38:32.112660441 +0300 MSK deployed        devops22-chart-0.1.0    1.19.0     
 
-user@host:~$ kubectl config set-credentials devops22 --client-key=devops22.key --client-certificate=devops22.crt --embed-certs=true
-User "devops22" set.
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ helm list -n app2
+NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                   APP VERSION
+deploy-3        app2            1               2023-07-25 11:38:45.214961096 +0300 MSK deployed        devops22-chart-0.1.0    1.19.0 
 
-user@host:~$ kubectl config set-context devops22 --cluster=microk8s-cluster --user=devops22
-Context "devops22" created.
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ kubectl get pods -n app1
+NAME                                           READY   STATUS    RESTARTS   AGE
+deploy-1-devops22-chart-app-9ffcbd767-qls99    1/1     Running   0          90s
+deploy-2-devops22-chart-app-668bd668c5-ts4hp   1/1     Running   0          68s
 
-user@host:~$ kubectl config get-contexts
-CURRENT   NAME       CLUSTER            AUTHINFO   NAMESPACE
-*         devops22   microk8s-cluster   devops22   
-          microk8s   microk8s-cluster   admin      
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ kubectl get pods -n app2
+NAME                                          READY   STATUS    RESTARTS   AGE
+deploy-3-devops22-chart-app-7c849db6b-d89tj   1/1     Running   0          58s
 
-user@host:~$ kubectl config use-context devops22
-Switched to context "devops22".
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ kubectl exec -n app1 deploy-1-devops22-chart-app-9ffcbd767-qls99 -- nginx -V
+nginx version: nginx/1.19.0
+built by gcc 8.3.0 (Debian 8.3.0-6) 
+built with OpenSSL 1.1.1d  10 Sep 2019
 
-user@host:~$ kubectl config view
-apiVersion: v1
-clusters:
-- cluster:
-    certificate-authority-data: DATA+OMITTED
-    server: https://130.193.54.9:16443
-  name: microk8s-cluster
-contexts:
-- context:
-    cluster: microk8s-cluster
-    user: devops22
-  name: devops22
-- context:
-    cluster: microk8s-cluster
-    user: admin
-  name: microk8s
-current-context: devops22
-kind: Config
-preferences: {}
-users:
-- name: admin
-  user:
-    token: REDACTED
-- name: devops22
-  user:
-    client-certificate-data: DATA+OMITTED
-    client-key-data: DATA+OMITTED
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ kubectl exec -n app1 deploy-2-devops22-chart-app-668bd668c5-ts4hp -- nginx -V
+nginx version: nginx/1.20.0
+built by gcc 8.3.0 (Debian 8.3.0-6) 
+built with OpenSSL 1.1.1d  10 Sep 2019
 
-user@host:~$ kubectl auth can-i list pods -n devops22
-yes
-
-user@host:~$ kubectl auth can-i list pods/logs -n devops22
-yes
-
-user@host:~$ kubectl auth can-i create pods -n devops22
-no
-
-user@host:~$ kubectl auth can-i create ingress -n devops22
-no
-
-user@host:~$ kubectl auth can-i list ingress -n devops22
-no
+user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ kubectl exec -n app2 deploy-3-devops22-chart-app-7c849db6b-d89tj  -- nginx -V
+nginx version: nginx/1.21.0
+built by gcc 8.3.0 (Debian 8.3.0-6) 
+built with OpenSSL 1.1.1d  10 Sep 2019
 
 ```
