@@ -1,121 +1,30 @@
-# Домашнее задание к занятию «Helm»
+# Домашнее задание к занятию «Компоненты Kubernetes»
 
-## Задание 1. Подготовить Helm-чарт для приложения
+## Задание. Необходимо определить требуемые ресурсы
 
-Чарт
+Исходные данные:
 
-[Chart.yml](12-kuber/10-kuber_helm/devops22-chart/Chart.yaml)</br>
-[values.yml](12-kuber/10-kuber_helm/devops22-chart/values.yaml)</br>
-[deployment.yml](12-kuber/10-kuber_helm/devops22-chart/templates/deployment.yaml)</br>
-[service.yml](12-kuber/10-kuber_helm/devops22-chart/templates/service.yaml)</br>
-[ingress.yml](12-kuber/10-kuber_helm/devops22-chart/templates/ingress.yaml)</br>
+|  | CPU | RAM, Гб | Реплики | 
+|--|------|-----|-----------------|
+| **БД** | 1 | 4 | 3 | 
+| **Кэш** | 1 | 4 | 3 |
+| **Фронтенд** | 0.2 | 0.05 | 5 | 
+| **Бэкэнд** | 1 | 0.6 | 10 |
+| **ИТОГО** | 17 | 30.25 | 21 |
 
-```console
-user@host:~/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm$ helm create devops22-chart
-Creating devops22-chart
+Суммарно проекту требуется 17 ядер и 30.25 Гб RAM. Требования очевидно небольшие, любой современный сервер может обеспечить такие ресурсы, 
+и поэтому задача выбора количества рабочих нод и их конфигурации - это в большей степени ответ на вопрос обеспечения отказоустойчивости, быстрого отклика (latency) системы и логики распределения подов по нодам.
 
-user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ helm package ./
-Successfully packaged chart and saved it to: /home/user/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart/devops22-chart-0.1.0.tgz
+В задании об этом не сказано, так что предположим, что проект разворачивается on-premise (на собственном оборудовании), т.к. для облачных провайдеров расчет будет несколько иной.
 
-user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ helm install deploy-1 devops22-chart-0.1.0.tgz 
-NAME: deploy-1
-LAST DEPLOYED: Tue Jul 25 11:35:42 2023
-NAMESPACE: default
-STATUS: deployed
-REVISION: 1
-TEST SUITE: None
-NOTES:
-Just installed deploy-1-devops22-chart-app
+Минимальное количество рабочих нод - 3 (это минимальное количество реплик), а максимальное - 21, если размещать по 1-й реплике на ноде. 21 нода - это очевидный overhead, поэтому я бы разбил рабочие ноды на 2 группы. Логично разместить бэкенд поближе к БД, а фронтенд к кешу, т.е. поды с БД и бэкендом будут на 1-й группе нод, а поды фронта и кэша на 2-й. Таким образом в 1-й группе нужно 3 ноды с распределением реплик БД 1-1-1 и бэкенда 3-3-4, и во 2-й группе также 3 ноды с распределением реплик кэша 1-1-1 и фронтенда 2-2-1. В 1-й группе нагрузка на ноду получается максимум 5 ядер, 6.4 Гб, во 2-й - 2 ядра, 4.1 Гб. Добавим для каждой ноды минимум 2 ядра и 2 Гб для обеспечения работы хостовой ОС и получим, что ближайшая стандартная конфигурация для рабочей ноды 1-й группы - 8 ядер, 16 Гб RAM, для 2-й группы - 4 ядра, 8 Гб RAM. Добавим для обеспечения отказоустойчивости в кластер 1 рабочую ноду с параметрами 8 ядер, 16 Гб RAM, она сможет в случае аварии принять всю нагрузку от одной ноды как 1-й группы, так и 2-й. Разница в параметрах нод 1-й и 2-й групп по современным меркам очень небольшая, а для снижения TCO и упрощения обслуживания выгоднее иметь одну "стандартную" конфигурацию "железа", поэтому выбираем для рабочей ноды сервер с параметрами 8 ядер, 16 Гб RAM, и таких серверов потребуется 7. Можно уменьшить количество рабочих нод до 6, но тогда нужно выбрать сервер с параметрами 16 ядер, 16 Гб RAM. Разница в цене между конфигурациями с 8 ядрами и 16 ядрами менее 10%, а выгода от сокращения одной рабочей ноды более 15% в общей стоимости. При этом каждая рабочая нода будет иметь достаточный запас производительности, чтобы принять нагрузку в случае выхода из строя любой одной ноды.
 
-user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ helm install deploy-2 --set image.tag="1.20.0" devops22-chart-0.1.0.tgz 
-NAME: deploy-2
-LAST DEPLOYED: Tue Jul 25 11:36:08 2023
-NAMESPACE: default
-STATUS: deployed
-REVISION: 1
-TEST SUITE: None
-NOTES:
-Just installed deploy-2-devops22-chart-app
+Теперь определимся с master нодами. Для обеспечения отказоустойчивости требуется минимум 3 ноды для control plane, с параметрами 4 ядра, 16 Гб (https://docs.oracle.com/en/operating-systems/olcne/1.1/relnotes/hosts.html). Здесь мы также можем выбрать нашу "стандартную" конфигурацию с 16 ядрами, 16 Гб RAM.
 
-user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ kubectl get pods
-NAME                                           READY   STATUS    RESTARTS   AGE
-deploy-1-devops22-chart-app-9ffcbd767-fvkb7    1/1     Running   0          50s
-deploy-2-devops22-chart-app-668bd668c5-s6mnw   1/1     Running   0          21s
+Не забудем, что мы посчитали "боевое" production окружение, а требуется еще как минимум dev окружение. Для dev окружения будет достаточно 2-х нод (16 ядер, 32 Гб RAM) или 3-х "стандартных" нод, т.к. их суммарная производительность достаточна как для разработки проекта, так и для проведения нагрузочного тестирования, а 3 ноды дополнительно обеспечат отказоустойчивость dev окружения. На dev окружении не обязательно разделять master и worker ноды.
 
-user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ kubectl exec deploy-1-devops22-chart-app-9ffcbd767-fvkb7 -- nginx -Vnginx version: nginx/1.19.0
-built by gcc 8.3.0 (Debian 8.3.0-6) 
-built with OpenSSL 1.1.1d  10 Sep 2019
+**Итого для проекта потребуется 12 физических нод с параметрами 16 ядер, 16 Гб RAM каждая.**
 
-user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ kubectl exec deploy-2-devops22-chart-app-668bd668c5-s6mnw -- nginx -V
-nginx version: nginx/1.20.0
-built by gcc 8.3.0 (Debian 8.3.0-6) 
-built with OpenSSL 1.1.1d  10 Sep 2019
+12 физических нод - это довольно много для такого небольшого проекта, если дополнительно учесть затраты на их обслуживание, энергопотребление, размещение минимум в 2-х, а лучше в 3-х территориально разнесенных серверных стойках. Поэтому данный расчет довольно условный. В реальных обстоятельствах я бы предположил, что проекту выделят 3 (максимум 4) физических сервера с минимально достаточными параметрами 32 ядра, 96 Гб RAM, и разместят сам кластер Kubernetes в виртуальных машинах, например KVM.
 
-```
-
-## Задание 2. Запустить две версии в разных неймспейсах
-
-```console
-user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ helm install deploy-1 -n app1 --create-namespace devops22-chart-0.1.0.tgz NAME: deploy-1
-LAST DEPLOYED: Tue Jul 25 11:38:10 2023
-NAMESPACE: app1
-STATUS: deployed
-REVISION: 1
-TEST SUITE: None
-NOTES:
-Just installed deploy-1-devops22-chart-app
-
-user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ helm install deploy-2 -n app1 --create-namespace --set image.tag="1.20.0" devops22-chart-0.1.0.tgz 
-NAME: deploy-2
-LAST DEPLOYED: Tue Jul 25 11:38:32 2023
-NAMESPACE: app1
-STATUS: deployed
-REVISION: 1
-TEST SUITE: None
-NOTES:
-Just installed deploy-2-devops22-chart-app
-
-user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ helm install deploy-3 -n app2 --create-namespace --set image.tag="1.21.0" devops22-chart-0.1.0.tgz 
-NAME: deploy-3
-LAST DEPLOYED: Tue Jul 25 11:38:45 2023
-NAMESPACE: app2
-STATUS: deployed
-REVISION: 1
-TEST SUITE: None
-NOTES:
-Just installed deploy-3-devops22-chart-app
-
-user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ helm list -n app1
-NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                   APP VERSION
-deploy-1        app1            1               2023-07-25 11:38:10.344357198 +0300 MSK deployed        devops22-chart-0.1.0    1.19.0     
-deploy-2        app1            1               2023-07-25 11:38:32.112660441 +0300 MSK deployed        devops22-chart-0.1.0    1.19.0     
-
-user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ helm list -n app2
-NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                   APP VERSION
-deploy-3        app2            1               2023-07-25 11:38:45.214961096 +0300 MSK deployed        devops22-chart-0.1.0    1.19.0 
-
-user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ kubectl get pods -n app1
-NAME                                           READY   STATUS    RESTARTS   AGE
-deploy-1-devops22-chart-app-9ffcbd767-qls99    1/1     Running   0          90s
-deploy-2-devops22-chart-app-668bd668c5-ts4hp   1/1     Running   0          68s
-
-user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ kubectl get pods -n app2
-NAME                                          READY   STATUS    RESTARTS   AGE
-deploy-3-devops22-chart-app-7c849db6b-d89tj   1/1     Running   0          58s
-
-user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ kubectl exec -n app1 deploy-1-devops22-chart-app-9ffcbd767-qls99 -- nginx -V
-nginx version: nginx/1.19.0
-built by gcc 8.3.0 (Debian 8.3.0-6) 
-built with OpenSSL 1.1.1d  10 Sep 2019
-
-user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ kubectl exec -n app1 deploy-2-devops22-chart-app-668bd668c5-ts4hp -- nginx -V
-nginx version: nginx/1.20.0
-built by gcc 8.3.0 (Debian 8.3.0-6) 
-built with OpenSSL 1.1.1d  10 Sep 2019
-
-user@host:~/Облако/Documents/Netology/DEVOPS-22/devops-netology/12-kuber/10-kuber_helm/devops22-chart$ kubectl exec -n app2 deploy-3-devops22-chart-app-7c849db6b-d89tj  -- nginx -V
-nginx version: nginx/1.21.0
-built by gcc 8.3.0 (Debian 8.3.0-6) 
-built with OpenSSL 1.1.1d  10 Sep 2019
-
-```
+В случае же размещения проекта в облаке расчет будет иной. Задача обеспечения отказоустойчивости и latency переходит к облачному провайдеру, поэтому количество нод будет в большей степени определяться удобством администрирования и стоимостью. Минимально в таком случае нужно будет заказать 3 ноды (32 ядра, 96 Гб RAM) - 2 для prod, и 1 для dev окружений и обеспечить расположение prod нод в разных дата-центрах.
