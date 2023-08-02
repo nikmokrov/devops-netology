@@ -1,0 +1,11 @@
+---
+useful_packages:
+  - nano
+  - mc
+  - net-tools
+  - git
+  - pip
+  - apt-transport-https
+  - ca-certificates
+  - curl
+kubeadm_version: "1.25.12-00"
