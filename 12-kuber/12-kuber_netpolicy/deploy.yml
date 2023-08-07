@@ -1,0 +1,137 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+  labels:
+    app: frontend
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: multitool
+        image: wbitt/network-multitool
+        imagePullPolicy: IfNotPresent
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  labels:
+    app: backend
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: multitool
+        image: wbitt/network-multitool
+        imagePullPolicy: IfNotPresent
+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cache-deployment
+  labels:
+    app: cache
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cache
+  template:
+    metadata:
+      labels:
+        app: cache
+    spec:
+      containers:
+      - name: multitool
+        image: wbitt/network-multitool
+        imagePullPolicy: IfNotPresent
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-svc
+  namespace: app
+spec:
+  ports:
+  - name: multitool-port
+    port: 80
+    protocol: TCP
+  selector:
+    app: frontend
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-svc
+  namespace: app
+spec:
+  ports:
+  - name: multitool-port
+    port: 80
+    protocol: TCP
+  selector:
+    app: backend
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cache-svc
+  namespace: app
+spec:
+  ports:
+  - name: multitool-port
+    port: 80
+    protocol: TCP
+  selector:
+    app: cache
+
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: task2-ingress
+#   annotations:
+#     nginx.ingress.kubernetes.io/rewrite-target: /  
+#   namespace: app
+# spec:
+#   rules:
+#   - http:
+#       paths:
+#       - path: /
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: frontend-svc
+#             port: 
+#               name: nginx-port
+#       - path: /api
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: backend-svc
+#             port: 
+#               name: multitool-port
