@@ -1,0 +1,122 @@
+---
+- name: Install kubeadm
+  hosts: k8s
+  pre_tasks:
+    - name: Install some useful packages
+      become: true
+      ansible.builtin.apt:
+        name: "{{ useful_packages }}"
+        state: present
+        update_cache: true
+  tasks:
+    - name: Remove swapfile from /etc/fstab
+      become: true
+      mount:
+        name: "{{ item }}"
+        fstype: swap
+        state: absent
+      with_items:
+        - swap
+        - none
+
+    - name: Disable swap
+      become: true
+      command: swapoff -a
+      when: ansible_swaptotal_mb > 0  
+
+    - name: Add an apt signing key for Kubernetes
+      become: true
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
+
+    - name: Adding apt repository for Kubernetes
+      become: true    
+      apt_repository:
+        repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
+        state: present
+        filename: kubernetes.list
+
+    - name: Install containerd
+      become: true
+      ansible.builtin.apt:
+        name: "containerd"
+        state: present
+        update_cache: true
+
+    - name: Install kubeadm packages
+      become: true
+      ansible.builtin.apt:
+        name: "{{ item }}={{ kubeadm_version }}"
+        state: present
+        update_cache: true
+        allow_downgrade: true
+        allow_change_held_packages: true
+      loop: "{{ kubeadm_packages }}"
+
+    - name: Hold kubeadm packages
+      become: true
+      ansible.builtin.dpkg_selections:
+        name: "{{ item }}"
+        selection: hold
+      loop: "{{ kubeadm_packages }}"
+
+    - name: Restart kubelet
+      become: true    
+      service:
+        name: kubelet
+        daemon_reload: yes
+        state: restarted
+
+    - name: Load modprobe br_netfilter module
+      become: true
+      community.general.modprobe:
+        name: "br_netfilter"
+        state: present
+
+    - name: Make br_netfilter module persistent
+      become: true
+      ansible.builtin.lineinfile:
+        path: /etc/modules-load.d/modules.conf
+        regexp: '^br_netfilter'
+        line: 'br_netfilter'
+        state: present
+
+    - name: Enable ip forward in sysctl.conf
+      become: true
+      ansible.builtin.lineinfile:
+        path: /etc/sysctl.conf
+        regexp: '^net\.ipv4\.ip_forward='
+        line: 'net.ipv4.ip_forward=1'
+        state: present
+
+    - name: Enable bridge-nf-call-iptables in sysctl.conf
+      become: true
+      ansible.builtin.lineinfile:
+        path: /etc/sysctl.conf
+        regexp: '^net.bridge.bridge-nf-call-iptables='
+        line: 'net.bridge.bridge-nf-call-iptables=1'
+        state: present
+
+    - name: Enable bridge-nf-call-arptables in sysctl.conf
+      become: true
+      ansible.builtin.lineinfile:
+        path: /etc/sysctl.conf
+        regexp: '^net.bridge.bridge-nf-call-arptables='
+        line: 'net.bridge.bridge-nf-call-arptables=1'
+        state: present
+
+    - name: Enable bridge-nf-call-ip6tables in sysctl.conf
+      become: true
+      ansible.builtin.lineinfile:
+        path: /etc/sysctl.conf
+        regexp: '^net.bridge.bridge-nf-call-ip6tables='
+        line: 'net.bridge.bridge-nf-call-ip6tables=1'
+        state: present
+
+    - name: Apply new sysctl.conf
+      become: true
+      ansible.builtin.shell: sysctl -p /etc/sysctl.conf
+
+    # - name: Flush handlers
+    #   meta: flush_handlers
