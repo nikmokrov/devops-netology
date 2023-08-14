@@ -1,5 +1,7 @@
 # Домашнее задание к занятию «Troubleshooting»
 
+## Задание. При деплое приложение web-consumer не может подключиться к auth-db. Необходимо это исправить
+
 1. Устанавливаем приложение
 ```console
 user@host:~$ kubectl apply -f https://raw.githubusercontent.com/netology-code/kuber-homeworks/main/3.5/files/task.yaml
