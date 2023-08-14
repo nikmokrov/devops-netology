@@ -1,318 +1,176 @@
-# Домашнее задание к занятию «Обновление приложений»
+# Домашнее задание к занятию «Troubleshooting»
 
-## Задание 1. Выбрать стратегию обновления приложения и описать ваш выбор
-
-По условиям задачи у нас имеются следующие ограничения:
-- Ресурсы, выделенные для приложения, ограничены, и нет возможности их увеличить.
-- Запас по ресурсам в менее загруженный момент времени составляет 20%.
-- Обновление мажорное, новые версии приложения не умеют работать со старыми.
-
-Основные стратегии обновления приложений - это Recreate, RollingUpdate, Blue-Green, RollingUpdate, A/B-testing, Shadow.</br>
-В боевых средах применяют в основном только две - RollingUpdate и Blue-Green.</br>
-Blue-Green и Shadow нам не подходят, т.к. требуют двойного резервирования ресурсов для реализации, чего у нас нет по условиям задачи (только 20% и нельзя увеличить).</br>
-A/B-testing применяют в основном для тестирования нового функционала, у нас же речь именно про обновление.</br>
-RollingUpdate и Canary позволяют выполнить обновление в условиях ограниченности ресурсов. Но по условию задачи новые версии приложения не умеют работать со старыми (нет обратной совместимости), а это значит, что нельзя допускать ситуации, когда поды с новыми версиями (например, frontend) обращаются к старым версиям (backend). Следовательно и эти стратегии не подходят.
-
-Остается стратегия Recreate, которая подходит под все условия. При этой стратегии все поды старых версий будут остановлены и потом запущены поды с новыми версиями.
-Дополнительных ресурсов не потребуется и конфликта версий не возникнет.
-
-**Выбираем стратегию Recreate.**
-
-
-## Задание 2. Обновить приложение
-
-[deploy.yml](./12-kuber/13-kuber_update/deploy.yml)</br>
-
-1. Создаем deployment
+1. Устанавливаем приложение
 ```console
-user@host:~$ kubectl apply -f Netology/DEVOPS-22/devops-netology/12-kuber/13-kuber_update/deploy.yml 
-deployment.apps/update-deployment created
+user@host:~$ kubectl apply -f https://raw.githubusercontent.com/netology-code/kuber-homeworks/main/3.5/files/task.yaml
+Error from server (NotFound): error when creating "https://raw.githubusercontent.com/netology-code/kuber-homeworks/main/3.5/files/task.yaml": namespaces "web" not found
+Error from server (NotFound): error when creating "https://raw.githubusercontent.com/netology-code/kuber-homeworks/main/3.5/files/task.yaml": namespaces "data" not found
+Error from server (NotFound): error when creating "https://raw.githubusercontent.com/netology-code/kuber-homeworks/main/3.5/files/task.yaml": namespaces "data" not found
 
-user@host:~$ kubectl get deployment
-NAME                READY   UP-TO-DATE   AVAILABLE   AGE
-update-deployment   5/5     5            5           16s
+user@host:~$ kubectl create ns web
+namespace/web created
 
-user@host:~$ kubectl describe deployments update-deployment
-Name:                   update-deployment
-Namespace:              default
-CreationTimestamp:      Tue, 08 Aug 2023 19:49:23 +0300
-Labels:                 app=nginx-multitool
-Annotations:            deployment.kubernetes.io/revision: 1
-Selector:               app=nginx-multitool
-Replicas:               5 desired | 5 updated | 5 total | 5 available | 0 unavailable
-StrategyType:           RollingUpdate
-MinReadySeconds:        0
-RollingUpdateStrategy:  0% max unavailable, 100% max surge
-Pod Template:
-  Labels:  app=nginx-multitool
-  Containers:
-   nginx:
-    Image:        nginx:1.19.0
-    Port:         <none>
-    Host Port:    <none>
-    Environment:  <none>
-    Mounts:       <none>
-   multitool:
-    Image:      wbitt/network-multitool
-    Port:       <none>
-    Host Port:  <none>
-    Environment:
-      HTTP_PORT:  8888
-    Mounts:       <none>
-  Volumes:        <none>
-Conditions:
-  Type           Status  Reason
-  ----           ------  ------
-  Available      True    MinimumReplicasAvailable
-  Progressing    True    NewReplicaSetAvailable
-OldReplicaSets:  <none>
-NewReplicaSet:   update-deployment-79b9f89c7f (5/5 replicas created)
-Events:
-  Type    Reason             Age   From                   Message
-  ----    ------             ----  ----                   -------
-  Normal  ScalingReplicaSet  29s   deployment-controller  Scaled up replica set update-deployment-79b9f89c7f to 5
-```
+user@host:~$ kubectl create ns data
+namespace/data created
 
-2. Обновляем версию nginx в приложении до версии 1.20
-```console
-user@host:~$ kubectl set image deployment/update-deployment nginx=nginx:1.20.0
-deployment.apps/update-deployment image updated
+user@host:~$ kubectl apply -f https://raw.githubusercontent.com/netology-code/kuber-homeworks/main/3.5/files/task.yaml
+deployment.apps/web-consumer created
+deployment.apps/auth-db created
+service/auth-db created
 
-user@host:~$ kubectl get deployments
-NAME                READY   UP-TO-DATE   AVAILABLE   AGE
-update-deployment   5/5     5            5           31s
+user@host:~$ kubectl get pods -n web
+NAME                            READY   STATUS    RESTARTS   AGE
+web-consumer-85cccb47d4-4xltj   1/1     Running   0          3m27s
+web-consumer-85cccb47d4-v8vsr   1/1     Running   0          3m27s
 
-user@host:~$ kubectl describe deployments update-deployment
-Name:                   update-deployment
-Namespace:              default
-CreationTimestamp:      Tue, 08 Aug 2023 19:49:23 +0300
-Labels:                 app=nginx-multitool
-Annotations:            deployment.kubernetes.io/revision: 2
-Selector:               app=nginx-multitool
-Replicas:               5 desired | 5 updated | 5 total | 5 available | 0 unavailable
-StrategyType:           RollingUpdate
-MinReadySeconds:        0
-RollingUpdateStrategy:  0% max unavailable, 100% max surge
-Pod Template:
-  Labels:  app=nginx-multitool
-  Containers:
-   nginx:
-    Image:        nginx:1.20.0
-    Port:         <none>
-    Host Port:    <none>
-    Environment:  <none>
-    Mounts:       <none>
-   multitool:
-    Image:      wbitt/network-multitool
-    Port:       <none>
-    Host Port:  <none>
-    Environment:
-      HTTP_PORT:  8888
-    Mounts:       <none>
-  Volumes:        <none>
-Conditions:
-  Type           Status  Reason
-  ----           ------  ------
-  Available      True    MinimumReplicasAvailable
-  Progressing    True    NewReplicaSetAvailable
-OldReplicaSets:  <none>
-NewReplicaSet:   update-deployment-9c779747f (5/5 replicas created)
-Events:
-  Type    Reason             Age   From                   Message
-  ----    ------             ----  ----                   -------
-  Normal  ScalingReplicaSet  57s   deployment-controller  Scaled up replica set update-deployment-79b9f89c7f to 5
-  Normal  ScalingReplicaSet  10s   deployment-controller  Scaled up replica set update-deployment-9c779747f to 5
-  Normal  ScalingReplicaSet  8s    deployment-controller  Scaled down replica set update-deployment-79b9f89c7f to 4 from 5
-  Normal  ScalingReplicaSet  8s    deployment-controller  Scaled down replica set update-deployment-79b9f89c7f to 3 from 4
-  Normal  ScalingReplicaSet  8s    deployment-controller  Scaled down replica set update-deployment-79b9f89c7f to 1 from 3
-  Normal  ScalingReplicaSet  7s    deployment-controller  Scaled down replica set update-deployment-79b9f89c7f to 0 from 1
-```
-
-3. Пытаемся обновить nginx до версии 1.28
-```console
-user@host:~$ kubectl set image deployment/update-deployment nginx=nginx:1.28.0
-deployment.apps/update-deployment image updated
-
-user@host:~$ kubectl get pods
-NAME                                 READY   STATUS             RESTARTS   AGE
-update-deployment-5f75545945-7rlxx   1/2     ErrImagePull       0          71s
-update-deployment-5f75545945-jg9cg   1/2     ErrImagePull       0          71s
-update-deployment-5f75545945-rb79v   1/2     ImagePullBackOff   0          71s
-update-deployment-5f75545945-rbssh   1/2     ErrImagePull       0          71s
-update-deployment-5f75545945-zv222   1/2     ImagePullBackOff   0          71s
-update-deployment-9c779747f-28gpg    2/2     Running            0          2m17s
-update-deployment-9c779747f-7drgc    2/2     Running            0          2m17s
-update-deployment-9c779747f-8c55j    2/2     Running            0          2m17s
-update-deployment-9c779747f-bl4wx    2/2     Running            0          2m17s
-update-deployment-9c779747f-ftgrw    2/2     Running            0          2m17s
-
-user@host:~$ kubectl rollout status deployment/update-deployment
-Waiting for deployment "update-deployment" rollout to finish: 5 old replicas are pending termination...
+user@host:~$ kubectl get pods -n data
+NAME                       READY   STATUS    RESTARTS   AGE
+auth-db-7778bc87f9-8q6wp   1/1     Running   0          3m35s
 
 ```
 
-4. Откатываемся после неудачного обновления
+2. В первую очередь обращает на себя внимание то, что поды создаются в разных namespace - web и data. Это уже потенциальная причина для неполадок, запомним.</br>
+Проверяем логи подов:
 ```console
-user@host:~$ kubectl rollout history deployment/update-deployment
-deployment.apps/update-deployment 
-REVISION  CHANGE-CAUSE
-1         <none>
-2         <none>
-3         <none>
+user@host:~$ kubectl -n data logs auth-db-7778bc87f9-8q6wp
+/docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration
+/docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/
+/docker-entrypoint.sh: Launching /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh
+10-listen-on-ipv6-by-default.sh: Getting the checksum of /etc/nginx/conf.d/default.conf
+10-listen-on-ipv6-by-default.sh: Enabled listen on IPv6 in /etc/nginx/conf.d/default.conf
+/docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh
+/docker-entrypoint.sh: Configuration complete; ready for start up
 
-user@host:~$ kubectl rollout history deployment/update-deployment --revision=2
-deployment.apps/update-deployment with revision #2
-Pod Template:
-  Labels:       app=nginx-multitool
-        pod-template-hash=9c779747f
-  Containers:
-   nginx:
-    Image:      nginx:1.20.0
-    Port:       <none>
-    Host Port:  <none>
-    Environment:        <none>
-    Mounts:     <none>
-   multitool:
-    Image:      wbitt/network-multitool
-    Port:       <none>
-    Host Port:  <none>
-    Environment:
-      HTTP_PORT:        8888
-    Mounts:     <none>
-  Volumes:      <none>
+user@host:~$ kubectl -n web logs pod/web-consumer-85cccb47d4-4xltj  
+curl: (6) Couldn't resolve host 'auth-db'
+curl: (6) Couldn't resolve host 'auth-db'
+curl: (6) Couldn't resolve host 'auth-db'
 
-user@host:~$ kubectl rollout undo deployment/update-deployment --to-revision=2
-deployment.apps/update-deployment rolled back
-
-user@host:~$ kubectl rollout status deployment/update-deployment
-deployment "update-deployment" successfully rolled out
-
-user@host:~$ kubectl get pods
-NAME                                READY   STATUS    RESTARTS   AGE
-update-deployment-9c779747f-28gpg   2/2     Running   0          6m40s
-update-deployment-9c779747f-7drgc   2/2     Running   0          6m40s
-update-deployment-9c779747f-8c55j   2/2     Running   0          6m40s
-update-deployment-9c779747f-bl4wx   2/2     Running   0          6m40s
-update-deployment-9c779747f-ftgrw   2/2     Running   0          6m40s
-user@host:~$ kubectl get deployments
-NAME                READY   UP-TO-DATE   AVAILABLE   AGE
-update-deployment   5/5     5            5           7m37s
-
-user@host:~$ kubectl get rs
-NAME                           DESIRED   CURRENT   READY   AGE
-update-deployment-5797856659   0         0         0       6m30s
-update-deployment-5f75545945   0         0         0       5m52s
-update-deployment-79b9f89c7f   0         0         0       7m45s
-update-deployment-9c779747f    5         5         5       6m58s
+user@host:~$ kubectl -n web logs pod/web-consumer-85cccb47d4-v8vsr
+curl: (6) Couldn't resolve host 'auth-db'
+curl: (6) Couldn't resolve host 'auth-db'
+curl: (6) Couldn't resolve host 'auth-db'
 
 ```
 
-## Задание 3*. Создать Canary deployment
+В логе деплоя auth-bd ничего подозрительного.</br>
+А вот в логах подов web-consumer сразу видим, что не может быть разрешено имя auth-db.</br>
 
-1. Устанавливаем в кластере nginx ingress
+Проверяем вручную:
 ```console
-user@host:~$ helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-"ingress-nginx" has been added to your repositories
+user@host:~$ kubectl -n web exec pod/web-consumer-85cccb47d4-v8vsr -- nslookup auth-db
+Server:    10.96.0.10
+Address 1: 10.96.0.10 kube-dns.kube-system.svc.cluster.local
 
-user@host:~$ helm install ingress --namespace ingress --create-namespace --set rbac.create=true,controller.kind=DaemonSet,controller.service.type=ClusterIP,controller.hostNetwork=true ingress-nginx/ingress-nginx
-
+nslookup: can't resolve 'auth-db'
+command terminated with exit code 1
 ```
 
-2. Создаем deployment, configmap, service, ingress</br>
-[canary.yml](./12-kuber/13-kuber_update/canary.yml)</br>
-
+Имя auth-db не разрешается. Поды в разных namespace, поэтому не могут обращаться друг к другу по коротким именам DNS.
+Пробуем разрешить полное имя:
 ```console
-user@host:~$ kubectl apply -f Netology/DEVOPS-22/devops-netology/12-kuber/13-kuber_update/canary.yml 
-configmap/nginx-blue-configmap created
-configmap/nginx-green-configmap created
-deployment.apps/nginx-blue-deployment created
-deployment.apps/nginx-green-deployment created
-service/nginx-blue-svc created
-service/nginx-green-svc created
-ingress.networking.k8s.io/blue-ingress created
-ingress.networking.k8s.io/green-ingress created
+user@host:~$ kubectl -n web exec pod/web-consumer-85cccb47d4-v8vsr -- nslookup auth-db.data.svc.cluster.local
+Server:    10.96.0.10
+Address 1: 10.96.0.10 kube-dns.kube-system.svc.cluster.local
 
-user@host:~$ kubectl get ingress
-NAME            CLASS   HOSTS   ADDRESS        PORTS   AGE
-blue-ingress    nginx   *       10.102.46.71   80      16m
-green-ingress   nginx   *       10.102.46.71   80      16m
-
-user@host:~$ kubectl describe ingress blue-ingress
-Name:             blue-ingress
-Labels:           <none>
-Namespace:        default
-Address:          10.102.46.71
-Ingress Class:    nginx
-Default backend:  <default>
-Rules:
-  Host        Path  Backends
-  ----        ----  --------
-  *           
-              /   nginx-blue-svc:nginx-port (10.244.189.65:80)
-Annotations:  nginx.ingress.kubernetes.io/rewrite-target: /
-Events:
-  Type    Reason  Age                From                      Message
-  ----    ------  ----               ----                      -------
-  Normal  Sync    16m (x2 over 16m)  nginx-ingress-controller  Scheduled for sync
-  Normal  Sync    16m (x2 over 16m)  nginx-ingress-controller  Scheduled for sync
-
-user@host:~$ kubectl describe ingress green-ingress
-Name:             green-ingress
-Labels:           <none>
-Namespace:        default
-Address:          10.102.46.71
-Ingress Class:    nginx
-Default backend:  <default>
-Rules:
-  Host        Path  Backends
-  ----        ----  --------
-  *           
-              /   nginx-green-svc:nginx-port (10.244.235.131:80)
-Annotations:  nginx.ingress.kubernetes.io/canary: true
-              nginx.ingress.kubernetes.io/canary-by-header: x-canary
-              nginx.ingress.kubernetes.io/canary-by-header-value: want green
-              nginx.ingress.kubernetes.io/rewrite-target: /
-Events:
-  Type    Reason  Age                  From                      Message
-  ----    ------  ----                 ----                      -------
-  Normal  Sync    8m59s (x6 over 17m)  nginx-ingress-controller  Scheduled for sync
-  Normal  Sync    8m59s (x6 over 17m)  nginx-ingress-controller  Scheduled for sync
-
+Name:      auth-db.data.svc.cluster.local
+Address 1: 10.107.34.217 auth-db.data.svc.cluster.local
 ```
+Полное имя разрешается.</br>
 
-3. Если в запросе передать заголовок "x-canary: want green", попадаем на green deployment, во всех остальных случаях попадем на blue deployment
+**Причина, почему web-consumer не может подключиться к auth-db - использование короткого имени DNS при помещении подов в разные namespace.**
+
+3. Очевидных решений два: </br>
+
+или обращаться к auth-db по полному DNS имени </br>
+[task_ver1.yaml](./12-kuber/14-kuber_troubleshooting/task_ver1.yaml)</br>
+
+или поместить все поды в один namespace </br>
+[task_ver2.yaml](./12-kuber/14-kuber_troubleshooting/task_ver2.yaml)</br>
+
+4. Решение с использованием полного имени:
 ```console
-ubuntu@worker1:~$ curl http://10.102.46.71/
-<!doctype html>
-<html lang="en">
-  <head>
-    <title>DEVOPS-22 nginx page - blue!</title>
-  </head>
-  <body>
-    <h1>DEVOPS-22 nginx sample page for canary deployment - blue</h1>
-  </body>
-</html>
+user@host:~$ kubectl apply -f Netology/DEVOPS-22/devops-netology/12-kuber/14-kuber_troubleshooting/task_ver1.yaml 
+deployment.apps/web-consumer configured
+deployment.apps/auth-db unchanged
+service/auth-db unchanged
 
-ubuntu@worker1:~$ curl -H "x-canary: want blue" http://10.102.46.71/
-<!doctype html>
-<html lang="en">
-  <head>
-    <title>DEVOPS-22 nginx page - blue!</title>
-  </head>
-  <body>
-    <h1>DEVOPS-22 nginx sample page for canary deployment - blue</h1>
-  </body>
-</html>
+user@host:~$ kubectl -n web logs pod/web-consumer-86588bdc6f-brnv6
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+    body {
+        width: 35em;
+        margin: 0 auto;
+        font-family: Tahoma, Verdana, Arial, sans-serif;
+    }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
 
-ubuntu@worker1:~$ curl -H "x-canary: want green" http://10.102.46.71/
-<!doctype html>
-<html lang="en">
-  <head>
-    <title>DEVOPS-22 nginx page - green!</title>
-  </head>
-  <body>
-    <h1>DEVOPS-22 nginx sample page for canary deployment - green</h1>
-  </body>
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href="http://nginx.com/">nginx.com</a>.</p>
+
+                                 Dload  Upload   Total   Spent    Left  Speed
+<p><em>Thank you for using nginx.</em></p>
+100   612  100   612    0     0   134k      0 --:--:-- --:--:-- --:--:--  298k
+</body>
 </html>
 
 ```
+
+Решение с помещением подов в один namespace:
+```console
+user@host:~$ kubectl apply -f Netology/DEVOPS-22/devops-netology/12-kuber/14-kuber_troubleshooting/task_ver2.yaml 
+deployment.apps/web-consumer configured
+deployment.apps/auth-db created
+service/auth-db created
+user@host:~$ kubectl -n web get pods
+NAME                            READY   STATUS        RESTARTS   AGE
+auth-db-7778bc87f9-f4cvb        1/1     Running       0          16s
+web-consumer-85cccb47d4-nqvtd   1/1     Running       0          15s
+web-consumer-85cccb47d4-p8pvq   1/1     Running       0          16s
+web-consumer-86588bdc6f-brnv6   1/1     Terminating   0          40m
+web-consumer-86588bdc6f-lq7q6   1/1     Terminating   0          39m
+
+user@host:~$ kubectl -n web logs pods/web-consumer-85cccb47d4-nqvtd
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   612  100   612    0     0  58733      0 --:--:-- --:--:-- --:--:--  199k
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+    body {
+        width: 35em;
+        margin: 0 auto;
+        font-family: Tahoma, Verdana, Arial, sans-serif;
+    }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href="http://nginx.com/">nginx.com</a>.</p>
+
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
+
+```
+
+Оба решения рабочие, но правильное скорее первое, т.к. для помещения подов в разные namespace могут быть веские причины (например, вопрос безопасности или разделения сфер ответственности).
