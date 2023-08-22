@@ -1,114 +1,88 @@
-# Домашнее задание к занятию «Организация сети»
+# Домашнее задание к занятию «Вычислительные мощности. Балансировщики нагрузки»
 
 ## Задание 1. Yandex Cloud
 
-1. Создать пустую VPC</br>
-[vpc.tf](./13-cloud/1-net/vpc.tf)</br>
+1. Создать бакет Object Storage и разместить в нём файл с картинкой</br>
+[bucket.tf](./13-cloud/2-balancer/bucket.tf) - Bucket</br>
 
-2. Публичная подсеть, NAT-инстанс, ВМ</br>
-[public.tf](./13-cloud/1-net/public.tf)</br>
+2. Создать группу ВМ в public подсети фиксированного размера с шаблоном LAMP и веб-страницей</br>
+[vpc.tf](./13-cloud/2-balancer/vpc.tf) - VPC</br>
+[public.tf](./13-cloud/2-balancer/public.tf) - public subnet</br>
+[ig.tf](./13-cloud/2-balancer/ig.tf) - Instance Group</br>
+[lamp-content.yml](./13-cloud/2-balancer/lamp-content.yml) - Cloud-init файл для настройки LAMP</br>
 
-3. Приватная подсеть, Route table, ВМ</br>
-[private.tf](./13-cloud/1-net/private.tf)</br>
+3. Подключить группу к сетевому балансировщику</br>
+[lb.tf](./13-cloud/2-balancer/lb.tf)</br>
 
-4. Прочие ресурсы Terraform</br>
-[main.tf](./13-cloud/1-net/main.tf)</br>
-[vars.tf](./13-cloud/1-net/vars.tf)</br>
+4. (дополнительно)* Создать Application Load Balancer</br>
+[alb.tf](./13-cloud/2-balancer/alb.tf)</br>
+
+5. Прочие ресурсы Terraform</br>
+[main.tf](./13-cloud/2-balancer/main.tf)</br>
+[vars.tf](./13-cloud/2-balancer/vars.tf)</br>
+[output.tf](./13-cloud/2-balancer/output.tf)</br>
 
 ```console
 user@host:~$ terraform apply
 ...
-Apply complete! Resources: 7 added, 0 changed, 0 destroyed.
-
-
-user@host:~$ yc vpc network list
-+----------------------+--------------+
-|          ID          |     NAME     |
-+----------------------+--------------+
-| enp70qikobumk2gqe1q6 | default      |
-| enpfn82nl5p7q9umrjij | devops22 vpc |
-+----------------------+--------------+
-
-user@host:~$ yc vpc subnet list
-+----------------------+-----------------------+----------------------+----------------------+---------------+-------------------+
-|          ID          |         NAME          |      NETWORK ID      |    ROUTE TABLE ID    |     ZONE      |       RANGE       |
-+----------------------+-----------------------+----------------------+----------------------+---------------+-------------------+
-| b0csd4845ljn1vercg7p | default-ru-central1-c | enp70qikobumk2gqe1q6 |                      | ru-central1-c | [10.130.0.0/24]   |
-| e2l4l1v42olj7qruul67 | private subnet        | enpfn82nl5p7q9umrjij | enp8qqt8ejb3am4ng7uu | ru-central1-b | [192.168.20.0/24] |
-| e2loqdquk6b6btrpu62j | default-ru-central1-b | enp70qikobumk2gqe1q6 |                      | ru-central1-b | [10.129.0.0/24]   |
-| e2lqjd55mt6a7f823r5l | public subnet         | enpfn82nl5p7q9umrjij |                      | ru-central1-b | [192.168.10.0/24] |
-| e9b8cb18rsl226vi4398 | default-ru-central1-a | enp70qikobumk2gqe1q6 |                      | ru-central1-a | [10.128.0.0/24]   |
-+----------------------+-----------------------+----------------------+----------------------+---------------+-------------------+
-
-user@host:~$ yc vpc route-tables list
-+----------------------+-----------+-------------+----------------------+
-|          ID          |   NAME    | DESCRIPTION |      NETWORK-ID      |
-+----------------------+-----------+-------------+----------------------+
-| enp8qqt8ejb3am4ng7uu | nat-route |             | enpfn82nl5p7q9umrjij |
-+----------------------+-----------+-------------+----------------------+
-
-user@host:~$ yc vpc route-table show --name nat-route
-id: enp8qqt8ejb3am4ng7uu
-folder_id: b1ga7t052sv70padtm26
-created_at: "2023-08-15T16:48:07Z"
-name: nat-route
-network_id: enpfn82nl5p7q9umrjij
-static_routes:
-  - destination_prefix: 0.0.0.0/0
-    next_hop_address: 192.168.10.254
-
-user@host:~$ yc compute instance list
-+----------------------+--------------+---------------+---------+----------------+----------------+
-|          ID          |     NAME     |    ZONE ID    | STATUS  |  EXTERNAL IP   |  INTERNAL IP   |
-+----------------------+--------------+---------------+---------+----------------+----------------+
-| epd52tpat7unas9l25f7 | private-node | ru-central1-b | RUNNING |                | 192.168.20.6   |
-| epdbjmml1818nggsnteo | nat-inst     | ru-central1-b | RUNNING | 158.160.28.245 | 192.168.10.254 |
-| epdrkgqkismqk3ph6ce3 | public-node  | ru-central1-b | RUNNING | 84.201.166.232 | 192.168.10.7   |
-+----------------------+--------------+---------------+---------+----------------+----------------+
-
+Apply complete! Resources: 12 added, 0 changed, 0 destroyed.
 ```
 
-Доступ в интернет с ноды в public subnet
+![Pic. 1](./13-cloud/2-balancer/pics/yc.png "Pic. 1")
+
 ```console
-ubuntu@public-node:~$ ping 8.8.8.8
-PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
-64 bytes from 8.8.8.8: icmp_seq=1 ttl=58 time=25.6 ms
-64 bytes from 8.8.8.8: icmp_seq=2 ttl=58 time=25.1 ms
-64 bytes from 8.8.8.8: icmp_seq=3 ttl=58 time=25.2 ms
+user@host:~/Netology/DEVOPS-22/devops-netology/13-cloud/2-balancer$ yc compute instance-group list
++----------------------+--------+--------+------+
+|          ID          |  NAME  | STATUS | SIZE |
++----------------------+--------+--------+------+
+| cl11mr7phtalgq3phnfh | ig-alb | ACTIVE |    3 |
+| cl17nch59godu7gur75f | ig-lb  | ACTIVE |    3 |
++----------------------+--------+--------+------+
 
+user@host:~/Netology/DEVOPS-22/devops-netology/13-cloud/2-balancer$ yc load-balancer nlb list
++----------------------+----------------------------+-------------+----------+----------------+------------------------+--------+
+|          ID          |            NAME            |  REGION ID  |   TYPE   | LISTENER COUNT | ATTACHED TARGET GROUPS | STATUS |
++----------------------+----------------------------+-------------+----------+----------------+------------------------+--------+
+| enp3rtgadmdqbdhf1e98 | network-load-balancer-lamp | ru-central1 | EXTERNAL |              1 | enpatpqjgifrl0qco64e   | ACTIVE |
++----------------------+----------------------------+-------------+----------+----------------+------------------------+--------+
+
+user@host:~/Netology/DEVOPS-22/devops-netology/13-cloud/2-balancer$ yc application-load-balancer load-balancer list
++----------------------+--------------------------------+-----------+----------------+--------+
+|          ID          |              NAME              | REGION ID | LISTENER COUNT | STATUS |
++----------------------+--------------------------------+-----------+----------------+--------+
+| ds7d6rn16so9mmpfs4ns | application-load-balancer-lamp |           |              1 | ACTIVE |
++----------------------+--------------------------------+-----------+----------------+--------+
 ```
 
-Доступ в интернет с ноды в private subnet. По traceroute видно, что трафик идет через nat-instance (192.168.10.254):
+IP-адреса ВМ и балансировщиков:
 ```console
-ubuntu@private-node:~$ ping 8.8.8.8
-PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
-64 bytes from 8.8.8.8: icmp_seq=1 ttl=54 time=24.6 ms
-64 bytes from 8.8.8.8: icmp_seq=2 ttl=54 time=23.7 ms
-64 bytes from 8.8.8.8: icmp_seq=3 ttl=54 time=23.6 ms
+user@host:~/Netology/DEVOPS-22/devops-netology/13-cloud/2-balancer$ yc compute instance list
++----------------------+---------------------------+---------------+---------+-------------+---------------+
+|          ID          |           NAME            |    ZONE ID    | STATUS  | EXTERNAL IP |  INTERNAL IP  |
++----------------------+---------------------------+---------------+---------+-------------+---------------+
+| epd0csneajop7v6iihqt | cl11mr7phtalgq3phnfh-ufex | ru-central1-b | RUNNING |             | 192.168.10.4  |
+| epd3r7g0mhdrupaeloab | cl11mr7phtalgq3phnfh-yzav | ru-central1-b | RUNNING |             | 192.168.10.18 |
+| epdgnoi21r7ulsnmislt | cl11mr7phtalgq3phnfh-ycoq | ru-central1-b | RUNNING |             | 192.168.10.11 |
+| epdng30tg2e3a1nms1d1 | cl17nch59godu7gur75f-imim | ru-central1-b | RUNNING |             | 192.168.10.14 |
+| epdsk0jaomn1u45k46f3 | cl17nch59godu7gur75f-etek | ru-central1-b | RUNNING |             | 192.168.10.7  |
+| epdug38g3o50bur23hur | cl17nch59godu7gur75f-udyc | ru-central1-b | RUNNING |             | 192.168.10.8  |
++----------------------+---------------------------+---------------+---------+-------------+---------------+
 
-ubuntu@private-node:~$ traceroute 8.8.8.8
-traceroute to 8.8.8.8 (8.8.8.8), 30 hops max, 60 byte packets
- 1  _gateway (192.168.20.1)  0.682 ms  0.652 ms  0.637 ms
- 2  * * *
- 3  nat-inst.nikmokrov.cloud (192.168.10.254)  0.980 ms  0.962 ms  0.947 ms
- 4  nat-inst.nikmokrov.cloud (192.168.10.254)  0.932 ms  0.915 ms  0.878 ms
- 5  * * *
- 6  * * *
- 7  * * *
- 8  * * *
- 9  google.msk.piter-ix.net (185.0.12.11)  14.856 ms msk-ix-gw3.google.com (195.208.208.250)  8.401 ms 142.250.162.254 (142.250.162.254)  8.877 ms
-10  * 108.170.250.34 (108.170.250.34)  8.830 ms *
-11  209.85.255.136 (209.85.255.136)  26.074 ms 108.170.250.129 (108.170.250.129)  8.978 ms 142.250.238.214 (142.250.238.214)  26.586 ms
-12  172.253.51.221 (172.253.51.221)  22.635 ms 72.14.232.190 (72.14.232.190)  24.918 ms 216.239.57.222 (216.239.57.222)  26.174 ms
-13  172.253.51.243 (172.253.51.243)  25.292 ms 216.239.62.107 (216.239.62.107)  25.415 ms 216.239.56.113 (216.239.56.113)  25.575 ms
-14  74.125.253.109 (74.125.253.109)  22.843 ms 74.125.253.94 (74.125.253.94)  23.686 ms *
-15  * * *
-16  * * *
-17  * * *
-18  * * *
-19  * * *
-20  * * *
-21  * * *
-22  * * dns.google (8.8.8.8)  24.133 ms
+user@host:~/Netology/DEVOPS-22/devops-netology/13-cloud/2-balancer$ yc vpc address list
++----------------------+-------------------------------+-----------------+----------+------+
+|          ID          |             NAME              |     ADDRESS     | RESERVED | USED |
++----------------------+-------------------------------+-----------------+----------+------+
+| e9bpjtf4f3jfa0hihtlf |                               | 158.160.116.154 | false    | true |
+| e9bpu36b1orheikgieju | alb-ipv4-ds7d6rn16so9mmpfs4ns | 51.250.73.169   | true     | true |
++----------------------+-------------------------------+-----------------+----------+------+
 
 ```
+
+Оба балансировщика работают, при обновлении страницы запрос отрабатывают разные хосты, что видно по отображающимся внутренним IP.</br>
+Network Load Balancer</br>
+![Pic. 2](./13-cloud/2-balancer/pics/lb1.png "Pic. 2")
+![Pic. 3](./13-cloud/2-balancer/pics/lb2.png "Pic. 3")
+
+Application Load Balancer</br>
+![Pic. 4](./13-cloud/2-balancer/pics/alb1.png "Pic. 4")
+![Pic. 5](./13-cloud/2-balancer/pics/alb2.png "Pic. 5")

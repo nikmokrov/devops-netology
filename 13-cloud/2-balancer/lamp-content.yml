@@ -1,0 +1,19 @@
+#cloud-config
+# vim: syntax=yaml
+#
+write_files:
+- path: /var/www/html/index.php
+  content: |
+    <?php
+        echo "Host: ".$_SERVER['SERVER_ADDR']." Time: ".date('Y-m-d H:i:s');
+    ?>
+
+    <html>
+      <body>
+        <p><img src="https://storage.yandexcloud.net/nikmokrov2108/clock.jpg" /></p>
+      </body>
+    </html>
+
+runcmd:
+  - [ rm, -f, '/var/www/html/index.html' ]
+  - [ systemctl, restart, apache2.service ]
