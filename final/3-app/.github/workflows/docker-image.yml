@@ -1,0 +1,59 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+    tags:
+      - '*'
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Login to Yandex Cloud Container Registry
+      id: login-cr
+      uses: yc-actions/yc-cr-login@v1
+      with:
+        yc-sa-json-credentials: ${{ secrets.YCR_JSON_KEY }}
+    - name: Build, tag, and push image to Yandex Cloud Container Registry
+      env:
+        CR_REGISTRY: crpd8j7bbfi9io9g9qdt
+        CR_REPOSITORY: clock-app
+        IMAGE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || github.sha }}
+      run: |
+        docker build -t cr.yandex/$CR_REGISTRY/$CR_REPOSITORY:$IMAGE_TAG -t cr.yandex/$CR_REGISTRY/$CR_REPOSITORY:latest .
+        docker push cr.yandex/$CR_REGISTRY/$CR_REPOSITORY:$IMAGE_TAG
+        docker push cr.yandex/$CR_REGISTRY/$CR_REPOSITORY:latest
+
+  deploy:
+
+    if: ${{ github.ref_type == 'tag' }}
+    needs: [ build ]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set the Kubernetes context
+        uses: azure/k8s-set-context@v3
+        with:
+          method: service-account
+          k8s-url: https://158.160.99.150
+          k8s-secret: ${{ secrets.KUBERNETES_SECRET }}
+
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Deploy to the Kubernetes cluster
+        uses: azure/k8s-deploy@v4
+        with:
+          action: deploy
+          strategy: basic
+          namespace: default
+          manifests: clock-app.yml
+          images: cr.yandex/crpd8j7bbfi9io9g9qdt/clock-app:${{ github.ref_name }}
+          pull-images: false
+          force: true

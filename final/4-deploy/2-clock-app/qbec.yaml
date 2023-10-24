@@ -1,0 +1,10 @@
+apiVersion: qbec.io/v1alpha1
+kind: App
+metadata:
+  name: clock-app
+spec:
+  environments:
+    clock-app:
+      defaultNamespace: clock-app
+      server: https://158.160.129.245
+  vars: {}

@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clock-app-deploy
+  labels:
+    app: clock-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clock-app
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 100%
+      maxUnavailable: 0%
+  template:
+    metadata:
+      labels:
+        app: clock-app
+    spec:
+      containers:
+      - name: clock-app
+        image: cr.yandex/crpd8j7bbfi9io9g9qdt/clock-app:latest
+        imagePullPolicy: IfNotPresent
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clock-app-svc
+spec:
+  selector:
+    app: clock-app
+  #type: LoadBalancer
+  ports:
+  - name: clock-app-port
+    port: 80
+    protocol: TCP
+    targetPort: 8000

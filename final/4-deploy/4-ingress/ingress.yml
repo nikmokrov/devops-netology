@@ -1,0 +1,68 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: svc-to-clock-app
+spec:
+  type: ExternalName
+  externalName: clock-app-svc.clock-app.svc.cluster.local
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: svc-to-atlantis
+spec:
+  type: ExternalName
+  externalName: atlantis-svc.atlantis.svc.cluster.local
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: svc-to-grafana
+spec:
+  type: ExternalName
+  externalName: grafana-svc.monitoring.svc.cluster.local
+
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: entry-ingress
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: "clock-app.nikmokrov-netology.ru"
+      http:
+        paths:
+          - pathType: Prefix
+            backend:
+              service:
+                name: svc-to-clock-app
+                port:
+                  number: 80
+            path: /
+    - host: "atlantis.nikmokrov-netology.ru"
+      http:
+        paths:
+          - pathType: Prefix
+            backend:
+              service:
+                name: svc-to-atlantis
+                port:
+                  number: 80
+            path: /
+    - host: "grafana.nikmokrov-netology.ru"
+      http:
+        paths:
+          - pathType: Prefix
+            backend:
+              service:
+                name: svc-to-grafana
+                port:
+                  number: 80
+            path: /
