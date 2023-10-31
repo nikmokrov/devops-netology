@@ -1,0 +1,128 @@
+1. Какой системный вызов делает команда cd?
+Я сделал таким образом:
+strace /bin/bash -c 'cd /tmp' 2>strace.log
+grep '/tmp' strace.log
+И получил следующее:
+execve("/bin/bash", ["/bin/bash", "-c", "cd /tmp"], 0x7ffce782af70 /* 23 vars */) = 0
+stat("/tmp", {st_mode=S_IFDIR|S_ISVTX|0777, st_size=4096, ...}) = 0
+chdir("/tmp")                           = 0
+Первая строка в самом начале лога и относится к команде запуска bash, а вот ближе к концу лога мы видим 2 системных вызова:
+stat() - получает файловые атрибуты по inode и собственно интрересующий нас вызов chdir(), выполняющий смену рабочего каталога.
+Таким образом у команды cd в ядре есть соответствущий ей системный вызов chdir(), принимающий единственный аргумент - путь к требуемуму каталогу.
+
+2. Порядок действий таков.
+Соберем логи strace на разные команды
+strace file /dev/tty 2>strace1.log
+strace file /dev/sda 2>strace2.log
+strace file /bin/bash 2>strace3.log
+Раз команда file ищет в своей базе данных, значит она должна ее предварительно открыть. Поищем системные вызовы для открытия файлов, например, open() в логах.
+grep open strace1.log
+grep open strace2.log
+grep open strace3.log
+И сравним. В принципе, там один и тот же набор: 
+openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libmagic.so.1", O_RDONLY|O_CLOEXEC) = 3
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/liblzma.so.5", O_RDONLY|O_CLOEXEC) = 3
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libbz2.so.1.0", O_RDONLY|O_CLOEXEC) = 3
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libz.so.1", O_RDONLY|O_CLOEXEC) = 3
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libpthread.so.0", O_RDONLY|O_CLOEXEC) = 3
+openat(AT_FDCWD, "/usr/lib/locale/locale-archive", O_RDONLY|O_CLOEXEC) = 3
+openat(AT_FDCWD, "/etc/magic.mgc", O_RDONLY) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/etc/magic", O_RDONLY) = 3
+openat(AT_FDCWD, "/usr/share/misc/magic.mgc", O_RDONLY) = 3
+openat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/gconv/gconv-modules.cache", O_RDONLY) = 3
+
+Видим файлы кеша, файлы библиотек, локаль, и некие файлы magic
+/etc/magic.mgc - файл не найден
+/etc/magic - файл пуст, но в нем есть комментарий, говорящий о том, что в этот файл можно добавить локальную для этой систмемы информацию для file. Формат записей можно узнать в man 5 magic.
+/usr/share/misc/magic.mgc - это ссылка на /usr/lib/file/magic.mgc - это и есть искомая стандартная база для file.
+
+3. Зная PID процесса, нужно найти файловый дескриптор удаленного файла. Пример:
+lsof -p 1566
+
+COMMAND  PID    USER   FD   TYPE DEVICE SIZE/OFF    NODE NAME
+ping    1566 vagrant    1w   REG  253,0   185902 1312140 /home/vagrant/ping (deleted)
+
+У удаленного файла дескриптор 1 (stdout).
+
+Далее можно обнулить файл одной из следующих команд:
+
+: > /proc/1566/fd/1
+echo -n > /proc/1566/fd/1
+truncate -s0 /proc/1566/fd/1
+
+Т.к. процесс продолжает исполняться, то можно эти команды добавить в cron для того, чтоб продолжать обнулять файл.
+
+4. Зомби-процесс - это завершившийся процесс, родитель которого по какой-то причине не выполнил процедуру обработки информации, оставшейся от дочернего процесса (код завершения) с помощью вызова wait().
+Так как процесс уже завершился, то аппаратные ресурсы (CPU, RAM, IO) он не потребляет. Однако ему все еще выделен какой-то PID, для хранения которого все таки требуется небольшое количество памяти. 
+Ну и так как общее количество PID в системе ограничено, то большое количество зомби-процессов может теоретически привести к исчерпанию PID. В этом основная опасность зомби-процессов.
+
+5. sudo opensnoop-bpfcc -d 1
+PID    COMM               FD ERR PATH
+882    vminfo              4   0 /var/run/utmp
+671    dbus-daemon        -1   2 /usr/local/share/dbus-1/system-services
+671    dbus-daemon        21   0 /usr/share/dbus-1/system-services
+671    dbus-daemon        -1   2 /lib/dbus-1/system-services
+671    dbus-daemon        21   0 /var/lib/snapd/dbus-1/system-services/
+679    irqbalance          6   0 /proc/interrupts
+679    irqbalance          6   0 /proc/stat
+679    irqbalance          6   0 /proc/irq/20/smp_affinity
+679    irqbalance          6   0 /proc/irq/0/smp_affinity
+679    irqbalance          6   0 /proc/irq/1/smp_affinity
+679    irqbalance          6   0 /proc/irq/8/smp_affinity
+679    irqbalance          6   0 /proc/irq/12/smp_affinity
+679    irqbalance          6   0 /proc/irq/14/smp_affinity
+679    irqbalance          6   0 /proc/irq/15/smp_affinity
+882    vminfo              4   0 /var/run/utmp
+671    dbus-daemon        -1   2 /usr/local/share/dbus-1/system-services
+671    dbus-daemon        21   0 /usr/share/dbus-1/system-services
+671    dbus-daemon        -1   2 /lib/dbus-1/system-services
+671    dbus-daemon        21   0 /var/lib/snapd/dbus-1/system-services/
+
+6. С помощью strace аналогично вопросу 1 можно выяснить, что uname -a использует вызов uname(). 
+В man 2 uname (строка 52) говорится: "Part of the utsname information is also accessible via /proc/sys/kernel/{ostype, hostname, osrelease, version, domainname}." 
+Значит эту информацию можно найти в файлах osrelease и version в каталоге /proc/sys/kernel.
+
+7. Через ; задается простая последовательность команд для bash, в которой все команды в любом случае будут последовательно выполнены. Выполнение последующих команд не зависит от результата выполнения предыдущих.
+А && задает логическую (И) последовательность, когда следующая команда будет выполнена, только если предыдущая замершилась успешно с выходным кодом 0.
+Применение set -e приводит к тому, что последовательность команд будет прервана немедленно при первой же неуспешной команде (с ненулевым кодом завершения). Значит, результат будет тот же, 
+что и при использовании &&, следовательно нет смысла использовать &&. 
+
+8. set -euxo pipefail состоит из следующих опций:
+-e - немедленно прервать работу, если команда завершилась с ненулевым кодом
+-u - рассматривать неинициализированные переменные как ошибку и остановить скрипт
+-x - выводить команды и их аргументы по мере исполнения
+-o pipefail - вернуть в качестве кода завершения последовательности команд код последней неуспешной команды
+
+Такое сочетание параметров задает максимально безопасный режим исполнения скриптов, когда требуется, чтобы сбой в любой из команд скрипта приводил к его остановке. Также мы не теряем код завершения сбойной команды и знаем, какая именно команда сбоит, что идеально для отладки.
+
+9. У меня при выполнении ps -e -o stat  получилась такая статистика:
+ps -e -o stat | grep -c D
+0
+ps -e -o stat | grep -c I
+56
+ps -e -o stat | grep -c R
+1
+ps -e -o stat | grep -c S
+71
+ps -e -o stat | grep -c T
+0
+ps -e -o stat | grep -c t
+0
+ps -e -o stat | grep -c W
+0
+ps -e -o stat | grep -c X
+0
+ps -e -o stat | grep -c Z
+0
+
+Наиболее часто встречающийся статус - S - непрерываемый сон (процесс ожидает событие, чтобы завершиться).
+
+Дополнительные символы в статусе означают:
+< - у процесса повышенный приоритет
+N - у процесса пониженный приоритет
+L - у процесса есть заблокированные страницы в памяти
+s - признак основного процесса сеанса
+l - многопоточный процесс (несколько тредов)
++ - находится в foreground process group - группа процессов, чей ID равен ID группы текущего терминала

@@ -1,0 +1,3 @@
+https://github.com/nikmokrov/devops-netology GitHub
+https://gitlab.com/nikmokrov2/devops-netology GitLab
+https://bitbucket.org/nikmokrov/devops-netology BitBucket

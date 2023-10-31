@@ -1,0 +1,91 @@
+1. Скачал готовый бинарник wget https://github.com/prometheus/node_exporter/releases/download/v1.4.0-rc.0/node_exporter-1.4.0-rc.0.linux-amd64.tar.gz и распаковал его в /usr/local/bin
+
+Создал файл /etc/systemd/system/node_exporter.service со следующим содержимым:
+[Unit]
+Description=Node Exporter
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=node_exporter
+Group=node_exporter
+Type=simple
+EnvironmentFile=-/etc/default/node_exporter
+ExecStart=/usr/local/bin/node_exporter $EXTRA_OPTS
+
+[Install]
+WantedBy=multi-user.target
+
+systemctl daemon-reload применит новый unit-файл в systemd. 
+Служба запустится автоматически после network-online.target. Нужно только включить ее командой systemctl enable node_exporter.
+
+Опции сервису можно задавать через файл /etc/default/node_exporter.
+Например, строка в файле
+EXTRA_OPTS=--web.listen-address=":9200"
+изменит порт, на котором слушает node_exporter, со стандарного 9100 на 9200.
+
+(скриншот)
+
+Служба корректно останавливается и запускается
+
+2. (скриншот)
+Для мониторинга я бы выбрал следующие метрики:
+CPU
+node_load1 - средняя загрузка системы
+node_load5
+node_load15
+RAM
+node_memory_MemTotal_bytes - объем памяти
+node_memory_MemFree_bytes - свободная память
+node_memory_SwapTotal_bytes - объем свопа
+node_memory_SwapFree_bytes - свободный своп
+node_memory_Buffers_bytes - буферы
+node_memory_Cached_bytes - кэш
+Disk
+node_filesystem_size_bytes - размер файловой системы в байтах
+node_filesystem_free_bytes - свободное место на файловой системе в байтах
+node_disk_io_now - текущее количество IO операций
+Network
+node_network_receive_bytes_total - байт принято
+node_network_receive_drop_total - количество дропов при получении
+node_network_receive_errs_total - количество ошибок при получении
+node_network_transmit_bytes_total - байт передано
+node_network_transmit_errs_total - количество дропов при передаче
+node_network_transmit_drop_total - количество ошибок при передаче
+
+
+3. (скриншот)
+
+4. Можно, если гипервизор позволяет.
+dmesg виртуалки выводит следующее:
+[    0.000000] Hypervisor detected: KVM
+[    0.057878] Booting paravirtualized kernel on KVM
+
+Linux прямо сообщает, что обнаружен гипервизор KVM и загружается паравиртуализованное ядро.
+
+В приниципе, гипервизор может скрыть от ВМ, что она запущена под его управлением и ВМ будет думать, что она запущена на bare metal, хотя современные популярные гипервизоры (KVM, Xen, Vmware, Hyper-V) так не делают.
+
+5. Команда 
+sysctl -a | grep nr_open
+показывает
+fs.nr_open = 1048576
+fs.nr_open задает максимальное количество файловых дескрипторов, доступных для процесса (https://www.kernel.org/doc/Documentation/sysctl/fs.txt).
+Это "hard" лимит, его может изменить только root.
+Другое ограничение - это "soft" лимит (ulimit -Sn), ограничение на количество файловых дескрипторов по-умолчанию для всех процессов, на ВМ Ubuntu 20.04 оно равно 1024. Это ограничение пользователь или процесс может изменять вплоть до "hard" лимита в пределах своей сессии.
+
+6.  (скриншот)
+
+7.  :(){ :|:& };: - это т.н. fork-бомба для bash. Создает бесконечное количество процессов, используя вызов fork().
+Работает таким образом:
+:() - это определение функции без аргументов с именем ":"
+{ :|:& } - в теле функции происходит рекурсивный вызов ее самой и перенаправление ее вывода через пайп на вход еще одного вызова ее же. & отправляет на исполнение в фоновом режиме, так что потомки не могут завершиться и начинают
+расходовать системные ресурсы.
+;: - завершает определение функции и запускает ее на исполнение
+
+После запуска бомбы и стабилизации системы dmesg сообщает:
+[   82.867964] cgroup: fork rejected by pids controller in /user.slice/user-1000.slice/session-1.scope
+
+Сработал механизм cgroup (control group или контрольная группа). cgroup - группа процессов в Linux, для которой механизмами ядра наложена изоляция и установлены ограничения на вычислительные ресурсы (процессорные, сетевые, ресурсы памяти, ресурсы ввода-вывода).
+cgroup ограничил количество вызовов fork() и, достигнув предела, в определенный момент бомба не смогла создать новый процесс и функция ":" рекурсивно завершилась.   
+
+По умолчанию, systemd устанавливает ограничение на количество процессов пользователя в 33% от sysctl kernel.threads-max. Ограничение задается в параметре TasksMax в файле /usr/lib/systemd/system/user-.slice.d/10-defaults.conf
